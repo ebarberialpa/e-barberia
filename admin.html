@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Panel de administración - Peluquería</title>
+<meta name="theme-color" content="#1e293b">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #1e293b;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+  header {
+    background: #273549;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #334155;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header h1 {
+    font-size: 17px;
+    color: #f1f5f9;
+  }
+  header .email {
+    font-size: 12px;
+    color: #64748b;
+  }
+  .btn-logout {
+    background: transparent;
+    border: 1px solid #475569;
+    color: #94a3b8;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .btn-logout:hover { border-color: #f87171; color: #f87171; }
+
+  .container {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 20px 16px;
+  }
+
+  .tabs {
+    display: flex;
+    background: #273549;
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 20px;
+    gap: 4px;
+  }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 11px 6px;
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #94a3b8;
+    user-select: none;
+    transition: all 0.2s;
+  }
+  .tab.active { background: #3b82f6; color: #fff; font-weight: 600; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .card {
+    background: #273549;
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card h2 {
+    font-size: 15px;
+    color: #f1f5f9;
+    margin-bottom: 16px;
+  }
+
+  .field { margin-bottom: 12px; }
+  label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 5px; }
+  input, select {
+    width: 100%;
+    padding: 11px 12px;
+    border-radius: 9px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #f1f5f9;
+    font-size: 14px;
+    outline: none;
+  }
+  input:focus, select:focus { border-color: #3b82f6; }
+
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  button.primary {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 9px;
+    background: #3b82f6;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  button.primary:hover { background: #2563eb; }
+  button.primary:disabled { background: #475569; cursor: not-allowed; }
+
+  .item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #334155;
+    gap: 10px;
+  }
+  .item:last-child { border-bottom: none; }
+  .item-info { flex: 1; min-width: 0; }
+  .item-title { font-size: 14px; color: #f1f5f9; font-weight: 600; }
+  .item-sub { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+  .item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  .icon-btn {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .icon-btn:hover { border-color: #64748b; color: #f1f5f9; }
+  .icon-btn.danger:hover { border-color: #f87171; color: #f87171; }
+
+  .badge {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+  .badge.on { background: rgba(74,222,128,0.15); color: #4ade80; }
+  .badge.off { background: rgba(148,163,184,0.15); color: #94a3b8; }
+  .badge.festivo { background: rgba(248,113,113,0.15); color: #f87171; }
+  .badge.vacaciones { background: rgba(96,165,250,0.15); color: #60a5fa; }
+  .badge.especial { background: rgba(251,191,36,0.15); color: #fbbf24; }
+
+  .dia-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #334155;
+  }
+  .dia-row:last-child { border-bottom: none; }
+  .dia-nombre {
+    width: 90px;
+    font-size: 14px;
+    color: #f1f5f9;
+    flex-shrink: 0;
+  }
+  .dia-horas {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+    align-items: center;
+  }
+  .dia-horas input { padding: 8px 10px; font-size: 13px; }
+  .switch {
+    position: relative;
+    width: 40px; height: 22px;
+    flex-shrink: 0;
+  }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: #475569;
+    border-radius: 22px;
+    transition: 0.2s;
+  }
+  .slider:before {
+    content: "";
+    position: absolute;
+    height: 16px; width: 16px;
+    left: 3px; bottom: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: 0.2s;
+  }
+  .switch input:checked + .slider { background: #3b82f6; }
+  .switch input:checked + .slider:before { transform: translateX(18px); }
+
+  .msg {
+    font-size: 13px;
+    text-align: center;
+    margin-top: 10px;
+    min-height: 16px;
+  }
+  .msg.error { color: #f87171; }
+  .msg.success { color: #4ade80; }
+
+  .empty {
+    text-align: center;
+    color: #64748b;
+    font-size: 13px;
+    padding: 20px 0;
+  }
+
+  .hidden { display: none !important; }
+
+  .spinner-full {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 60vh;
+    color: #64748b;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<header id="header" class="hidden">
+  <div>
+    <h1>💈 Panel de administración</h1>
+    <div class="email" id="adminEmail"></div>
+  </div>
+  <button class="btn-logout" id="btnLogout">Cerrar sesión</button>
+</header>
+
+<div id="cargando" class="spinner-full">Verificando acceso...</div>
+
+<div class="container hidden" id="container">
+
+  <div class="tabs">
+    <div class="tab active" data-panel="servicios">Servicios</div>
+    <div class="tab" data-panel="horario">Horario</div>
+    <div class="tab" data-panel="excepciones">Festivos</div>
+  </div>
+
+  <!-- ===== SERVICIOS ===== -->
+  <div class="panel active" id="panel-servicios">
+    <div class="card">
+      <h2>Nuevo servicio</h2>
+      <form id="formServicio">
+        <div class="field">
+          <label for="svNombre">Nombre</label>
+          <input type="text" id="svNombre" placeholder="Corte de pelo" required>
+        </div>
+        <div class="row-2">
+          <div class="field">
+            <label for="svDuracion">Duración (min)</label>
+            <input type="number" id="svDuracion" placeholder="30" min="5" step="5" required>
+          </div>
+          <div class="field">
+            <label for="svPrecio">Precio (€)</label>
+            <input type="number" id="svPrecio" placeholder="15" min="0" step="0.5" required>
+          </div>
+        </div>
+        <button type="submit" class="primary" id="btnGuardarServicio">Añadir servicio</button>
+      </form>
+      <div class="msg" id="msgServicio"></div>
+    </div>
+
+    <div class="card">
+      <h2>Servicios existentes</h2>
+      <div id="listaServicios"><div class="empty">Cargando...</div></div>
+    </div>
+  </div>
+
+  <!-- ===== HORARIO ===== -->
+  <div class="panel" id="panel-horario">
+    <div class="card">
+      <h2>Horario semanal</h2>
+      <div id="listaHorario"></div>
+      <button class="primary" id="btnGuardarHorario" style="margin-top:16px;">Guardar horario</button>
+      <div class="msg" id="msgHorario"></div>
+    </div>
+  </div>
+
+  <!-- ===== EXCEPCIONES ===== -->
+  <div class="panel" id="panel-excepciones">
+    <div class="card">
+      <h2>Añadir festivo / vacaciones / horario especial</h2>
+      <form id="formExcepcion">
+        <div class="field">
+          <label for="exFecha">Fecha</label>
+          <input type="date" id="exFecha" required>
+        </div>
+        <div class="field">
+          <label for="exTipo">Tipo</label>
+          <select id="exTipo">
+            <option value="festivo">Cerrado (festivo)</option>
+            <option value="vacaciones">Cerrado (vacaciones)</option>
+            <option value="especial">Horario especial (abierto pero distinto)</option>
+          </select>
+        </div>
+        <div class="row-2 hidden" id="exHorasEspeciales">
+          <div class="field">
+            <label for="exInicio">Abre</label>
+            <input type="time" id="exInicio">
+          </div>
+          <div class="field">
+            <label for="exFin">Cierra</label>
+            <input type="time" id="exFin">
+          </div>
+        </div>
+        <div class="field">
+          <label for="exMotivo">Motivo (opcional)</label>
+          <input type="text" id="exMotivo" placeholder="Ej: Navidad, vacaciones familiares...">
+        </div>
+        <button type="submit" class="primary" id="btnGuardarExcepcion">Añadir</button>
+      </form>
+      <div class="msg" id="msgExcepcion"></div>
+    </div>
+
+    <div class="card">
+      <h2>Próximas fechas marcadas</h2>
+      <div id="listaExcepciones"><div class="empty">Cargando...</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+
+<script>
+// Configuración real del proyecto Firebase "e-barberia"
+const firebaseConfig = {
+  apiKey: "AIzaSyB3ejavlHCtOFO8G1eriLq6lk5LxJpVUNA",
+  authDomain: "e-barberialpa.firebaseapp.com",
+  databaseURL: "https://e-barberialpa-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "e-barberialpa",
+  storageBucket: "e-barberialpa.firebasestorage.app",
+  messagingSenderId: "550304925693",
+  appId: "1:550304925693:web:34b21785193d1cfe387b94"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+
+const DIAS = [
+  { key: "lunes", nombre: "Lunes" },
+  { key: "martes", nombre: "Martes" },
+  { key: "miercoles", nombre: "Miércoles" },
+  { key: "jueves", nombre: "Jueves" },
+  { key: "viernes", nombre: "Viernes" },
+  { key: "sabado", nombre: "Sábado" },
+  { key: "domingo", nombre: "Domingo" }
+];
+
+// ---------- Guardia de acceso: solo admins ----------
+auth.onAuthStateChanged(async (user) => {
+  if (!user) {
+    window.location.href = "index.html";
+    return;
+  }
+  const snap = await db.ref("admins/" + user.uid).get();
+  if (!snap.exists()) {
+    await auth.signOut();
+    window.location.href = "index.html";
+    return;
+  }
+  document.getElementById("adminEmail").textContent = user.email;
+  document.getElementById("cargando").classList.add("hidden");
+  document.getElementById("header").classList.remove("hidden");
+  document.getElementById("container").classList.remove("hidden");
+  cargarServicios();
+  cargarHorario();
+  cargarExcepciones();
+});
+
+document.getElementById("btnLogout").addEventListener("click", async () => {
+  await auth.signOut();
+  window.location.href = "index.html";
+});
+
+// ---------- Tabs ----------
+const tabs = document.querySelectorAll(".tab");
+tabs.forEach(tab => {
+  tab.addEventListener("click", () => {
+    tabs.forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    document.getElementById("panel-" + tab.dataset.panel).classList.add("active");
+  });
+});
+
+function mostrarMensaje(id, texto, tipo) {
+  const el = document.getElementById(id);
+  el.textContent = texto;
+  el.className = "msg " + (tipo || "");
+  if (texto) setTimeout(() => { el.textContent = ""; el.className = "msg"; }, 3500);
+}
+
+// =========================================================
+// SERVICIOS
+// =========================================================
+function cargarServicios() {
+  db.ref("servicios").on("value", (snap) => {
+    const cont = document.getElementById("listaServicios");
+    const datos = snap.val();
+    if (!datos) {
+      cont.innerHTML = '<div class="empty">Aún no has añadido ningún servicio</div>';
+      return;
+    }
+    const ids = Object.keys(datos).sort((a, b) => (datos[a].nombre || "").localeCompare(datos[b].nombre || ""));
+    cont.innerHTML = ids.map(id => {
+      const s = datos[id];
+      const activo = s.activo !== false;
+      return `
+        <div class="item">
+          <div class="item-info">
+            <div class="item-title">${escapeHtml(s.nombre)} <span class="badge ${activo ? 'on' : 'off'}">${activo ? 'Activo' : 'Inactivo'}</span></div>
+            <div class="item-sub">${s.duracion} min · ${Number(s.precio).toFixed(2)} €</div>
+          </div>
+          <div class="item-actions">
+            <button class="icon-btn" data-toggle="${id}" title="${activo ? 'Desactivar' : 'Activar'}">${activo ? '⏸' : '▶'}</button>
+            <button class="icon-btn danger" data-delete="${id}" title="Eliminar">🗑</button>
+          </div>
+        </div>`;
+    }).join("");
+
+    cont.querySelectorAll("[data-toggle]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.toggle;
+        const actual = datos[id].activo !== false;
+        await db.ref("servicios/" + id + "/activo").set(!actual);
+      });
+    });
+    cont.querySelectorAll("[data-delete]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.delete;
+        if (confirm("¿Eliminar este servicio? Esta acción no se puede deshacer.")) {
+          await db.ref("servicios/" + id).remove();
+        }
+      });
+    });
+  });
+}
+
+document.getElementById("formServicio").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("btnGuardarServicio");
+  const nombre = document.getElementById("svNombre").value.trim();
+  const duracion = parseInt(document.getElementById("svDuracion").value, 10);
+  const precio = parseFloat(document.getElementById("svPrecio").value);
+
+  btn.disabled = true;
+  try {
+    await db.ref("servicios").push({
+      nombre, duracion, precio, activo: true, creadoEn: Date.now()
+    });
+    document.getElementById("formServicio").reset();
+    mostrarMensaje("msgServicio", "Servicio añadido correctamente", "success");
+  } catch (err) {
+    mostrarMensaje("msgServicio", "Error al guardar: " + err.message, "error");
+  }
+  btn.disabled = false;
+});
+
+// =========================================================
+// HORARIO SEMANAL
+// =========================================================
+function renderHorario(datos) {
+  const cont = document.getElementById("listaHorario");
+  cont.innerHTML = DIAS.map(d => {
+    const dia = (datos && datos[d.key]) || { activo: false, inicio: "09:00", fin: "20:00" };
+    return `
+      <div class="dia-row">
+        <div class="dia-nombre">${d.nombre}</div>
+        <label class="switch">
+          <input type="checkbox" data-dia="${d.key}" data-campo="activo" ${dia.activo ? "checked" : ""}>
+          <span class="slider"></span>
+        </label>
+        <div class="dia-horas">
+          <input type="time" data-dia="${d.key}" data-campo="inicio" value="${dia.inicio || '09:00'}">
+          <span style="color:#64748b;">–</span>
+          <input type="time" data-dia="${d.key}" data-campo="fin" value="${dia.fin || '20:00'}">
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function cargarHorario() {
+  db.ref("horario").once("value").then(snap => {
+    renderHorario(snap.val());
+  });
+}
+
+document.getElementById("btnGuardarHorario").addEventListener("click", async () => {
+  const btn = document.getElementById("btnGuardarHorario");
+  const horario = {};
+  DIAS.forEach(d => {
+    const activo = document.querySelector(`[data-dia="${d.key}"][data-campo="activo"]`).checked;
+    const inicio = document.querySelector(`[data-dia="${d.key}"][data-campo="inicio"]`).value;
+    const fin = document.querySelector(`[data-dia="${d.key}"][data-campo="fin"]`).value;
+    horario[d.key] = { activo, inicio, fin };
+  });
+
+  btn.disabled = true;
+  try {
+    await db.ref("horario").set(horario);
+    mostrarMensaje("msgHorario", "Horario guardado correctamente", "success");
+  } catch (err) {
+    mostrarMensaje("msgHorario", "Error al guardar: " + err.message, "error");
+  }
+  btn.disabled = false;
+});
+
+// =========================================================
+// EXCEPCIONES (festivos / vacaciones / horario especial)
+// =========================================================
+const exTipo = document.getElementById("exTipo");
+exTipo.addEventListener("change", () => {
+  document.getElementById("exHorasEspeciales").classList.toggle("hidden", exTipo.value !== "especial");
+});
+
+document.getElementById("formExcepcion").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("btnGuardarExcepcion");
+  const fecha = document.getElementById("exFecha").value;
+  const tipo = document.getElementById("exTipo").value;
+  const motivo = document.getElementById("exMotivo").value.trim();
+  const inicio = document.getElementById("exInicio").value;
+  const fin = document.getElementById("exFin").value;
+
+  if (!fecha) return;
+
+  btn.disabled = true;
+  try {
+    const dato = { fecha, tipo, motivo: motivo || "" };
+    if (tipo === "especial") {
+      dato.inicio = inicio || "09:00";
+      dato.fin = fin || "20:00";
+    }
+    // Usamos la propia fecha como clave para evitar duplicados en el mismo día
+    await db.ref("excepciones/" + fecha).set(dato);
+    document.getElementById("formExcepcion").reset();
+    document.getElementById("exHorasEspeciales").classList.add("hidden");
+    mostrarMensaje("msgExcepcion", "Fecha añadida correctamente", "success");
+  } catch (err) {
+    mostrarMensaje("msgExcepcion", "Error al guardar: " + err.message, "error");
+  }
+  btn.disabled = false;
+});
+
+function cargarExcepciones() {
+  db.ref("excepciones").on("value", (snap) => {
+    const cont = document.getElementById("listaExcepciones");
+    const datos = snap.val();
+    if (!datos) {
+      cont.innerHTML = '<div class="empty">No hay festivos ni fechas especiales marcadas</div>';
+      return;
+    }
+    const hoy = new Date().toISOString().slice(0, 10);
+    const fechas = Object.keys(datos).filter(f => f >= hoy).sort();
+    if (fechas.length === 0) {
+      cont.innerHTML = '<div class="empty">No hay fechas futuras marcadas</div>';
+      return;
+    }
+    const etiquetas = { festivo: "Festivo", vacaciones: "Vacaciones", especial: "Horario especial" };
+    cont.innerHTML = fechas.map(f => {
+      const ex = datos[f];
+      const fechaFmt = new Date(f + "T00:00:00").toLocaleDateString("es-ES", { weekday: 'short', day: 'numeric', month: 'short' });
+      const detalle = ex.tipo === "especial" ? `${ex.inicio} - ${ex.fin}` : (ex.motivo || etiquetas[ex.tipo]);
+      return `
+        <div class="item">
+          <div class="item-info">
+            <div class="item-title">${fechaFmt} <span class="badge ${ex.tipo}">${etiquetas[ex.tipo]}</span></div>
+            <div class="item-sub">${escapeHtml(detalle)}</div>
+          </div>
+          <div class="item-actions">
+            <button class="icon-btn danger" data-delete-ex="${f}" title="Eliminar">🗑</button>
+          </div>
+        </div>`;
+    }).join("");
+
+    cont.querySelectorAll("[data-delete-ex]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const fecha = btn.dataset.deleteEx;
+        if (confirm("¿Eliminar esta fecha marcada?")) {
+          await db.ref("excepciones/" + fecha).remove();
+        }
+      });
+    });
+  });
+}
+
+// ---------- Helper anti-XSS básico para texto insertado en innerHTML ----------
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str == null ? "" : String(str);
+  return div.innerHTML;
+}
+</script>
+</body>
+</html>
