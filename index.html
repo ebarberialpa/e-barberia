@@ -99,6 +99,18 @@
   button.submit:hover { background: #2563eb; }
   button.submit:disabled { background: #475569; cursor: not-allowed; }
 
+  .btn-logout-inline {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-size: 12px;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  .btn-logout-inline:hover { color: #94a3b8; text-decoration: underline; }
+
   .admin-link {
     text-align: center;
     margin-top: 18px;
@@ -137,6 +149,15 @@
 <div class="card">
   <h1 id="titulo">💈 Peluquería</h1>
   <div class="subtitle" id="subtitulo">Reserva tu cita en segundos</div>
+
+  <!-- Aviso de sesión ya iniciada -->
+  <div class="card" id="avisoSesion" style="background:#1e293b; border:1px solid #334155; padding:16px; margin-bottom:18px; display:none;">
+    <div style="font-size:13px; color:#94a3b8; margin-bottom:12px;">
+      Ya tienes una sesión iniciada como <strong id="avisoSesionEmail" style="color:#f1f5f9;"></strong>
+    </div>
+    <button type="button" class="submit" id="btnContinuarSesion" style="margin-top:0;">Continuar</button>
+    <button type="button" class="btn-logout-inline" id="btnCerrarSesionAviso">Cerrar sesión y usar otra cuenta</button>
+  </div>
 
   <div class="tabs" id="tabs">
     <div class="tab active" data-tab="login">Entrar</div>
@@ -353,16 +374,30 @@ function traducirError(code) {
   return errores[code] || "Ha ocurrido un error. Inténtalo de nuevo.";
 }
 
-// ---------- Si ya hay sesión iniciada, redirigir ----------
+// ---------- Si ya hay sesión iniciada, mostrar aviso en vez de redirigir sola ----------
+let destinoSiContinua = "reservar.html";
+
 auth.onAuthStateChanged(async (user) => {
-  if (user && window.location.pathname.endsWith("index.html") || (user && window.location.pathname.endsWith("/"))) {
-    const snapAdmin = await db.ref("admins/" + user.uid).get();
-    if (snapAdmin.exists()) {
-      window.location.href = "admin.html";
-    } else {
-      window.location.href = "reservar.html";
-    }
+  const aviso = document.getElementById("avisoSesion");
+  if (!user) {
+    aviso.style.display = "none";
+    return;
   }
+
+  const snapAdmin = await db.ref("admins/" + user.uid).get();
+  destinoSiContinua = snapAdmin.exists() ? "admin.html" : "reservar.html";
+
+  document.getElementById("avisoSesionEmail").textContent = user.email;
+  aviso.style.display = "block";
+});
+
+document.getElementById("btnContinuarSesion").addEventListener("click", () => {
+  window.location.href = destinoSiContinua;
+});
+
+document.getElementById("btnCerrarSesionAviso").addEventListener("click", async () => {
+  await auth.signOut();
+  document.getElementById("avisoSesion").style.display = "none";
 });
 </script>
 </body>
