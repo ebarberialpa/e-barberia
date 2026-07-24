@@ -1,4 +1,4 @@
-import { initializeApp, getApps, cert } from "firebase-admin/app";
+import { initializeApp, getApps, deleteApp, cert } from "firebase-admin/app";
 import { getDatabase } from "firebase-admin/database";
 import nodemailer from "nodemailer";
 
