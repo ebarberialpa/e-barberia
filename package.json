@@ -1,6 +1,5 @@
 {
-  "name": "peluqueria-actions",
-  "version": "1.0.0",
+  "name": "e-barberia-actions",
   "type": "module",
   "dependencies": {
     "firebase-admin": "^13.0.0",
