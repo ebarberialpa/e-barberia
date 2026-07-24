@@ -7,6 +7,7 @@ const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
 // Inicializar Firebase (solo una vez)
 if (!getApps().length) {
+    console.log(process.env.FIREBASE_DATABASE_URL);
     initializeApp({
         credential: cert(serviceAccount),
         databaseURL: process.env.FIREBASE_DATABASE_URL
