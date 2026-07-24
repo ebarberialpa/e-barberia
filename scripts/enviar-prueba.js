@@ -22,6 +22,9 @@ const snapshot = await db.ref("ajustes/horasCancelacion").get();
 
 console.log("Datos leídos:");
 console.log(snapshot.val());
+console.log("GMAIL_USER:", process.env.GMAIL_USER);
+console.log("PASS existe:", process.env.GMAIL_PASSWORD !== undefined);
+console.log("PASS longitud:", process.env.GMAIL_PASSWORD?.length);
 
 // Configurar Gmail
 const transporter = nodemailer.createTransport({
