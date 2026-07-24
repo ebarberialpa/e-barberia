@@ -339,6 +339,16 @@
       <button class="primary" id="btnGuardarHorario" style="margin-top:16px;">Guardar horario</button>
       <div class="msg" id="msgHorario"></div>
     </div>
+
+    <div class="card">
+      <h2>Política de cancelación</h2>
+      <div class="field">
+        <label for="horasCancelacion">Horas mínimas de antelación para poder cancelar una cita</label>
+        <input type="number" id="horasCancelacion" min="0" step="1" placeholder="Ej: 24">
+      </div>
+      <button class="primary" id="btnGuardarCancelacion">Guardar</button>
+      <div class="msg" id="msgCancelacion"></div>
+    </div>
   </div>
 
   <!-- ===== EXCEPCIONES ===== -->
@@ -633,7 +643,27 @@ function cargarHorario() {
   db.ref("horario").once("value").then(snap => {
     renderHorario(snap.val());
   });
+  db.ref("ajustes/horasCancelacion").once("value").then(snap => {
+    document.getElementById("horasCancelacion").value = snap.val() != null ? snap.val() : 24;
+  });
 }
+
+document.getElementById("btnGuardarCancelacion").addEventListener("click", async () => {
+  const btn = document.getElementById("btnGuardarCancelacion");
+  const horas = parseInt(document.getElementById("horasCancelacion").value, 10);
+  if (isNaN(horas) || horas < 0) {
+    mostrarMensaje("msgCancelacion", "Introduce un número de horas válido", "error");
+    return;
+  }
+  btn.disabled = true;
+  try {
+    await db.ref("ajustes/horasCancelacion").set(horas);
+    mostrarMensaje("msgCancelacion", "Guardado correctamente", "success");
+  } catch (err) {
+    mostrarMensaje("msgCancelacion", "Error al guardar: " + err.message, "error");
+  }
+  btn.disabled = false;
+});
 
 document.getElementById("btnGuardarHorario").addEventListener("click", async () => {
   const btn = document.getElementById("btnGuardarHorario");
