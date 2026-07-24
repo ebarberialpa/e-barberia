@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Reservar cita - Peluquería</title>
+<meta name="theme-color" content="#1e293b">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #1e293b;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+  header {
+    background: #273549;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #334155;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header h1 { font-size: 17px; color: #f1f5f9; }
+  header .email { font-size: 12px; color: #64748b; }
+  .btn-logout {
+    background: transparent;
+    border: 1px solid #475569;
+    color: #94a3b8;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .btn-logout:hover { border-color: #f87171; color: #f87171; }
+
+  .container { max-width: 640px; margin: 0 auto; padding: 20px 16px; }
+
+  .tabs {
+    display: flex;
+    background: #273549;
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 20px;
+    gap: 4px;
+  }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 11px 6px;
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #94a3b8;
+    user-select: none;
+    transition: all 0.2s;
+  }
+  .tab.active { background: #3b82f6; color: #fff; font-weight: 600; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .card { background: #273549; border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+  .card h2 { font-size: 15px; color: #f1f5f9; margin-bottom: 14px; }
+
+  .aviso-penalizacion {
+    background: rgba(248,113,113,0.1);
+    border: 1px solid rgba(248,113,113,0.3);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #fca5a5;
+    margin-bottom: 16px;
+    display: none;
+  }
+
+  /* --- Paso 1: servicios --- */
+  .servicio-opcion {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .servicio-opcion:hover { border-color: #475569; }
+  .servicio-opcion.selected { border-color: #3b82f6; background: rgba(59,130,246,0.08); }
+  .servicio-opcion .nombre { font-size: 14px; font-weight: 600; color: #f1f5f9; }
+  .servicio-opcion .duracion { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+  .servicio-opcion .precio { font-size: 15px; font-weight: 700; color: #4ade80; }
+
+  /* --- Paso 2: calendario --- */
+  .cal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .cal-header .mes { font-size: 15px; font-weight: 600; color: #f1f5f9; text-transform: capitalize; }
+  .cal-nav {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+  }
+  .cal-nav:hover { color: #f1f5f9; }
+  .cal-nav:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    text-align: center;
+  }
+  .cal-dow { font-size: 11px; color: #64748b; padding-bottom: 6px; }
+  .cal-day {
+    aspect-ratio: 1;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    color: #e2e8f0;
+  }
+  .cal-day.empty { cursor: default; }
+  .cal-day.disabled { color: #475569; cursor: not-allowed; }
+  .cal-day.today { border: 1px solid #3b82f6; }
+  .cal-day:not(.disabled):not(.empty):hover { background: #334155; }
+  .cal-day.selected { background: #3b82f6; color: #fff; font-weight: 600; }
+
+  .slots-titulo { font-size: 13px; color: #94a3b8; margin: 18px 0 10px; }
+  .slots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 8px;
+  }
+  .slot-btn {
+    padding: 10px 6px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 13px;
+    cursor: pointer;
+    text-align: center;
+  }
+  .slot-btn:hover { border-color: #3b82f6; }
+  .slot-btn.selected { background: #3b82f6; border-color: #3b82f6; color: #fff; font-weight: 600; }
+
+  /* --- Confirmación --- */
+  .resumen-linea {
+    display: flex; justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #334155;
+    font-size: 13px;
+  }
+  .resumen-linea:last-child { border-bottom: none; }
+  .resumen-linea .label { color: #94a3b8; }
+  .resumen-linea .valor { color: #f1f5f9; font-weight: 600; }
+
+  button.primary {
+    width: 100%;
+    padding: 13px;
+    border: none;
+    border-radius: 10px;
+    background: #3b82f6;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  button.primary:hover { background: #2563eb; }
+  button.primary:disabled { background: #475569; cursor: not-allowed; }
+
+  button.secondary {
+    width: 100%;
+    padding: 11px;
+    border: 1px solid #475569;
+    border-radius: 9px;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  button.secondary:hover { border-color: #94a3b8; color: #f1f5f9; }
+
+  /* --- Mis citas --- */
+  .cita-item {
+    padding: 14px;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    margin-bottom: 10px;
+  }
+  .cita-item .cita-top {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 6px;
+  }
+  .cita-item .cita-servicio { font-size: 14px; font-weight: 600; color: #f1f5f9; }
+  .cita-item .cita-fecha { font-size: 13px; color: #94a3b8; margin-top: 2px; }
+  .badge { font-size: 10px; padding: 3px 8px; border-radius: 20px; font-weight: 600; white-space: nowrap; }
+  .badge.confirmada { background: rgba(96,165,250,0.15); color: #60a5fa; }
+  .badge.completada { background: rgba(74,222,128,0.15); color: #4ade80; }
+  .badge.cancelada { background: rgba(148,163,184,0.15); color: #94a3b8; }
+  .badge.noShow { background: rgba(248,113,113,0.15); color: #f87171; }
+
+  .btn-cancelar-cita {
+    margin-top: 8px;
+    background: transparent;
+    border: 1px solid #475569;
+    color: #f87171;
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .btn-cancelar-cita:hover { border-color: #f87171; }
+  .cita-bloqueo-cancelar {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 6px;
+  }
+
+  .empty { text-align: center; color: #64748b; font-size: 13px; padding: 24px 0; }
+  .msg { font-size: 13px; text-align: center; margin-top: 10px; min-height: 16px; }
+  .msg.error { color: #f87171; }
+  .msg.success { color: #4ade80; }
+  .hidden { display: none !important; }
+
+  .spinner-full {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 60vh; color: #64748b; font-size: 14px;
+  }
+
+  .paso-atras {
+    font-size: 12px;
+    color: #64748b;
+    cursor: pointer;
+    margin-bottom: 12px;
+    display: inline-block;
+  }
+  .paso-atras:hover { color: #94a3b8; }
+</style>
+</head>
+<body>
+
+<header id="header" class="hidden">
+  <div>
+    <h1>💈 Reservar cita</h1>
+    <div class="email" id="clienteEmail"></div>
+  </div>
+  <button class="btn-logout" id="btnLogout">Cerrar sesión</button>
+</header>
+
+<div id="cargando" class="spinner-full">Cargando...</div>
+
+<div class="container hidden" id="container">
+
+  <div class="aviso-penalizacion" id="avisoNoShows"></div>
+
+  <div class="tabs">
+    <div class="tab active" data-panel="reservar">Reservar</div>
+    <div class="tab" data-panel="mis-citas">Mis citas</div>
+  </div>
+
+  <!-- ===== RESERVAR: PASO 1 - SERVICIO ===== -->
+  <div class="panel active" id="panel-reservar">
+    <div id="pasoServicio">
+      <div class="card">
+        <h2>1. Elige un servicio</h2>
+        <div id="listaServiciosCliente"><div class="empty">Cargando servicios...</div></div>
+      </div>
+    </div>
+
+    <!-- ===== PASO 2 - CALENDARIO Y HUECOS ===== -->
+    <div id="pasoCalendario" class="hidden">
+      <span class="paso-atras" id="volverAServicio">← Cambiar servicio</span>
+      <div class="card">
+        <h2 id="tituloServicioElegido">2. Elige fecha y hora</h2>
+        <div class="cal-header">
+          <button class="cal-nav" id="calMesAnterior">‹</button>
+          <div class="mes" id="calMesTexto"></div>
+          <button class="cal-nav" id="calMesSiguiente">›</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+
+        <div id="bloqueSlots" class="hidden">
+          <div class="slots-titulo" id="slotsTitulo"></div>
+          <div class="slots-grid" id="slotsGrid"></div>
+          <div class="empty hidden" id="sinHuecos">No quedan huecos disponibles este día. Prueba con otra fecha.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PASO 3 - CONFIRMAR ===== -->
+    <div id="pasoConfirmar" class="hidden">
+      <span class="paso-atras" id="volverACalendario">← Cambiar fecha/hora</span>
+      <div class="card">
+        <h2>3. Confirma tu cita</h2>
+        <div class="resumen-linea"><span class="label">Servicio</span><span class="valor" id="resServicio"></span></div>
+        <div class="resumen-linea"><span class="label">Fecha</span><span class="valor" id="resFecha"></span></div>
+        <div class="resumen-linea"><span class="label">Hora</span><span class="valor" id="resHora"></span></div>
+        <div class="resumen-linea"><span class="label">Duración</span><span class="valor" id="resDuracion"></span></div>
+        <div class="resumen-linea"><span class="label">Precio</span><span class="valor" id="resPrecio"></span></div>
+        <button class="primary" id="btnConfirmarReserva" style="margin-top:16px;">Confirmar reserva</button>
+        <div class="msg" id="msgReserva"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MIS CITAS ===== -->
+  <div class="panel" id="panel-mis-citas">
+    <div class="card">
+      <h2>Próximas citas</h2>
+      <div id="listaProximasCitas"><div class="empty">Cargando...</div></div>
+    </div>
+    <div class="card">
+      <h2>Historial</h2>
+      <div id="listaHistorialCitas"><div class="empty">Cargando...</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+
+<script>
+// Configuración real del proyecto Firebase "e-barberia"
+const firebaseConfig = {
+  apiKey: "AIzaSyB3ejavlHCtOFO8G1eriLq6lk5LxJpVUNA",
+  authDomain: "e-barberialpa.firebaseapp.com",
+  databaseURL: "https://e-barberialpa-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "e-barberialpa",
+  storageBucket: "e-barberialpa.firebasestorage.app",
+  messagingSenderId: "550304925693",
+  appId: "1:550304925693:web:34b21785193d1cfe387b94"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+
+const DIAS_SEMANA = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
+const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const DOW_CORTO = ["Lu","Ma","Mi","Ju","Vi","Sá","Do"];
+
+let usuarioActual = null;
+let clientePerfil = null;
+let servicios = {};
+let horario = {};
+let excepciones = {};
+let horasCancelacion = 24;
+
+let servicioElegido = null;
+let mesVisible = new Date();
+mesVisible.setDate(1);
+let fechaElegida = null; // "YYYY-MM-DD"
+let slotElegido = null;  // { inicio, fin }
+
+// ---------- Guardia de acceso ----------
+auth.onAuthStateChanged(async (user) => {
+  if (!user) {
+    window.location.href = "index.html";
+    return;
+  }
+  // Si es admin, lo mandamos a su panel en vez de a la reserva
+  const snapAdmin = await db.ref("admins/" + user.uid).get();
+  if (snapAdmin.exists()) {
+    window.location.href = "admin.html";
+    return;
+  }
+
+  usuarioActual = user;
+  document.getElementById("clienteEmail").textContent = user.email;
+
+  const [snapCliente, snapServicios, snapHorario, snapExcepciones, snapCancelacion] = await Promise.all([
+    db.ref("clientes/" + user.uid).get(),
+    db.ref("servicios").get(),
+    db.ref("horario").get(),
+    db.ref("excepciones").get(),
+    db.ref("ajustes/horasCancelacion").get()
+  ]);
+
+  clientePerfil = snapCliente.val() || {};
+  servicios = snapServicios.val() || {};
+  horario = snapHorario.val() || {};
+  excepciones = snapExcepciones.val() || {};
+  horasCancelacion = snapCancelacion.val() != null ? snapCancelacion.val() : 24;
+
+  mostrarAvisoNoShows();
+  renderServicios();
+  cargarMisCitas();
+
+  document.getElementById("cargando").classList.add("hidden");
+  document.getElementById("header").classList.remove("hidden");
+  document.getElementById("container").classList.remove("hidden");
+});
+
+document.getElementById("btnLogout").addEventListener("click", async () => {
+  await auth.signOut();
+  window.location.href = "index.html";
+});
+
+function mostrarAvisoNoShows() {
+  const n = clientePerfil.noShows || 0;
+  if (n > 0) {
+    const aviso = document.getElementById("avisoNoShows");
+    aviso.textContent = n === 1
+      ? "Tienes 1 ausencia sin justificar registrada. Por favor, cancela con tiempo si no vas a poder acudir."
+      : `Tienes ${n} ausencias sin justificar registradas. Por favor, cancela con tiempo si no vas a poder acudir.`;
+    aviso.style.display = "block";
+  }
+}
+
+// ---------- Tabs ----------
+document.querySelectorAll(".tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    document.getElementById("panel-" + tab.dataset.panel).classList.add("active");
+  });
+});
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str == null ? "" : String(str);
+  return div.innerHTML;
+}
+
+function hoyISO() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+
+function horaActualMin() {
+  const d = new Date();
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+function minAHora(min) {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
+}
+
+function horaAMin(hhmm) {
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + m;
+}
+
+// =========================================================
+// PASO 1: SERVICIOS
+// =========================================================
+function renderServicios() {
+  const cont = document.getElementById("listaServiciosCliente");
+  const ids = Object.keys(servicios).filter(id => servicios[id].activo !== false);
+  if (ids.length === 0) {
+    cont.innerHTML = '<div class="empty">De momento no hay servicios disponibles para reservar</div>';
+    return;
+  }
+  ids.sort((a, b) => (servicios[a].nombre || "").localeCompare(servicios[b].nombre || ""));
+  cont.innerHTML = ids.map(id => {
+    const s = servicios[id];
+    return `
+      <div class="servicio-opcion" data-servicio="${id}">
+        <div>
+          <div class="nombre">${escapeHtml(s.nombre)}</div>
+          <div class="duracion">${s.duracion} min</div>
+        </div>
+        <div class="precio">${Number(s.precio).toFixed(2)} €</div>
+      </div>`;
+  }).join("");
+
+  cont.querySelectorAll("[data-servicio]").forEach(el => {
+    el.addEventListener("click", () => {
+      servicioElegido = { id: el.dataset.servicio, ...servicios[el.dataset.servicio] };
+      irAPasoCalendario();
+    });
+  });
+}
+
+document.getElementById("volverAServicio").addEventListener("click", () => {
+  document.getElementById("pasoCalendario").classList.add("hidden");
+  document.getElementById("pasoServicio").classList.remove("hidden");
+  servicioElegido = null;
+  fechaElegida = null;
+  slotElegido = null;
+});
+
+document.getElementById("volverACalendario").addEventListener("click", () => {
+  document.getElementById("pasoConfirmar").classList.add("hidden");
+  document.getElementById("pasoCalendario").classList.remove("hidden");
+});
+
+// =========================================================
+// PASO 2: CALENDARIO
+// =========================================================
+function irAPasoCalendario() {
+  document.getElementById("pasoServicio").classList.add("hidden");
+  document.getElementById("pasoCalendario").classList.remove("hidden");
+  document.getElementById("tituloServicioElegido").textContent = `2. Elige fecha y hora — ${servicioElegido.nombre}`;
+  mesVisible = new Date();
+  mesVisible.setDate(1);
+  fechaElegida = null;
+  document.getElementById("bloqueSlots").classList.add("hidden");
+  renderCalendario();
+}
+
+document.getElementById("calMesAnterior").addEventListener("click", () => {
+  mesVisible.setMonth(mesVisible.getMonth() - 1);
+  renderCalendario();
+});
+document.getElementById("calMesSiguiente").addEventListener("click", () => {
+  mesVisible.setMonth(mesVisible.getMonth() + 1);
+  renderCalendario();
+});
+
+// ¿Qué excepción (si alguna) aplica a esta fecha? Prioridad: festivo/vacaciones > especial
+function excepcionParaFecha(fechaISO) {
+  let especial = null;
+  for (const id in excepciones) {
+    const ex = excepciones[id];
+    if (fechaISO >= ex.desde && fechaISO <= ex.hasta) {
+      if (ex.tipo === "festivo" || ex.tipo === "vacaciones") return ex;
+      if (ex.tipo === "especial") especial = ex;
+    }
+  }
+  return especial;
+}
+
+// Franjas horarias efectivas para una fecha concreta (ya resueltas excepción vs horario normal)
+function franjasParaFecha(fechaISO) {
+  const ex = excepcionParaFecha(fechaISO);
+  if (ex) {
+    if (ex.tipo === "festivo" || ex.tipo === "vacaciones") return [];
+    if (ex.tipo === "especial") return [{ inicio: ex.inicio, fin: ex.fin }];
+  }
+  const diaKey = DIAS_SEMANA[new Date(fechaISO + "T00:00:00").getDay()];
+  const dia = horario[diaKey];
+  if (!dia || !dia.activo) return [];
+  return dia.franjas || [];
+}
+
+function diaTieneHuecoPosible(fechaISO) {
+  return franjasParaFecha(fechaISO).length > 0;
+}
+
+function renderCalendario() {
+  document.getElementById("calMesTexto").textContent = MESES[mesVisible.getMonth()] + " " + mesVisible.getFullYear();
+
+  const hoy = hoyISO();
+  const primerDiaSemana = (mesVisible.getDay() + 6) % 7; // lunes=0 ... domingo=6
+  const diasEnMes = new Date(mesVisible.getFullYear(), mesVisible.getMonth() + 1, 0).getDate();
+
+  let html = DOW_CORTO.map(d => `<div class="cal-dow">${d}</div>`).join("");
+  for (let i = 0; i < primerDiaSemana; i++) html += `<div class="cal-day empty"></div>`;
+
+  for (let dia = 1; dia <= diasEnMes; dia++) {
+    const fechaISO = mesVisible.getFullYear() + "-" + String(mesVisible.getMonth() + 1).padStart(2, "0") + "-" + String(dia).padStart(2, "0");
+    const esPasado = fechaISO < hoy;
+    const cerrado = !diaTieneHuecoPosible(fechaISO);
+    const disabled = esPasado || cerrado;
+    const clases = ["cal-day"];
+    if (disabled) clases.push("disabled");
+    if (fechaISO === hoy) clases.push("today");
+    if (fechaISO === fechaElegida) clases.push("selected");
+    html += `<div class="${clases.join(' ')}" ${disabled ? "" : `data-fecha="${fechaISO}"`}>${dia}</div>`;
+  }
+
+  document.getElementById("calGrid").innerHTML = html;
+  document.getElementById("calMesAnterior").disabled = (mesVisible.getFullYear() === new Date().getFullYear() && mesVisible.getMonth() === new Date().getMonth());
+
+  document.querySelectorAll("#calGrid [data-fecha]").forEach(el => {
+    el.addEventListener("click", () => {
+      fechaElegida = el.dataset.fecha;
+      renderCalendario();
+      calcularYRenderSlots();
+    });
+  });
+}
+
+async function calcularYRenderSlots() {
+  const bloque = document.getElementById("bloqueSlots");
+  bloque.classList.remove("hidden");
+  document.getElementById("slotsTitulo").textContent = "Horas disponibles";
+  document.getElementById("slotsGrid").innerHTML = "";
+  document.getElementById("sinHuecos").classList.add("hidden");
+
+  const franjas = franjasParaFecha(fechaElegida);
+  const duracion = servicioElegido.duracion;
+
+  // Citas ya reservadas ese día (tabla pública, solo fecha/hora/estado, sin datos personales)
+  const snapCitas = await db.ref("citasPublicas").orderByChild("fecha").equalTo(fechaElegida).get();
+  const citasDelDia = snapCitas.val() || {};
+  const ocupados = Object.values(citasDelDia)
+    .filter(c => c.estado !== "cancelada")
+    .map(c => ({ inicio: horaAMin(c.inicio), fin: horaAMin(c.fin) }));
+
+  const esHoy = fechaElegida === hoyISO();
+  const minAhora = horaActualMin();
+
+  const slots = [];
+  franjas.forEach(f => {
+    const inicioMin = horaAMin(f.inicio);
+    const finMin = horaAMin(f.fin);
+    for (let t = inicioMin; t + duracion <= finMin; t += duracion) {
+      if (esHoy && t <= minAhora) continue;
+      const solapa = ocupados.some(o => t < o.fin && (t + duracion) > o.inicio);
+      if (!solapa) slots.push(t);
+    }
+  });
+
+  if (slots.length === 0) {
+    document.getElementById("sinHuecos").classList.remove("hidden");
+    return;
+  }
+
+  document.getElementById("slotsGrid").innerHTML = slots.map(t =>
+    `<div class="slot-btn" data-min="${t}">${minAHora(t)}</div>`
+  ).join("");
+
+  document.querySelectorAll("#slotsGrid [data-min]").forEach(el => {
+    el.addEventListener("click", () => {
+      const inicioMin = parseInt(el.dataset.min, 10);
+      slotElegido = { inicio: minAHora(inicioMin), fin: minAHora(inicioMin + duracion) };
+      irAPasoConfirmar();
+    });
+  });
+}
+
+// =========================================================
+// PASO 3: CONFIRMAR
+// =========================================================
+function irAPasoConfirmar() {
+  document.getElementById("pasoCalendario").classList.add("hidden");
+  document.getElementById("pasoConfirmar").classList.remove("hidden");
+
+  const fechaFmt = new Date(fechaElegida + "T00:00:00").toLocaleDateString("es-ES", { weekday: 'long', day: 'numeric', month: 'long' });
+  document.getElementById("resServicio").textContent = servicioElegido.nombre;
+  document.getElementById("resFecha").textContent = fechaFmt;
+  document.getElementById("resHora").textContent = slotElegido.inicio;
+  document.getElementById("resDuracion").textContent = servicioElegido.duracion + " min";
+  document.getElementById("resPrecio").textContent = Number(servicioElegido.precio).toFixed(2) + " €";
+}
+
+document.getElementById("btnConfirmarReserva").addEventListener("click", async () => {
+  const btn = document.getElementById("btnConfirmarReserva");
+  btn.disabled = true;
+  mostrarMensajeReserva("", "");
+
+  try {
+    // Comprobación de última hora: releemos las citas de ese día justo antes de escribir,
+    // para minimizar (que no eliminar del todo) la posibilidad de que dos personas reserven el mismo hueco a la vez.
+    const snapCitas = await db.ref("citasPublicas").orderByChild("fecha").equalTo(fechaElegida).get();
+    const citasDelDia = snapCitas.val() || {};
+    const inicioMin = horaAMin(slotElegido.inicio);
+    const finMin = horaAMin(slotElegido.fin);
+    const chocaConAlguna = Object.values(citasDelDia).some(c => {
+      if (c.estado === "cancelada") return false;
+      return inicioMin < horaAMin(c.fin) && finMin > horaAMin(c.inicio);
+    });
+
+    if (chocaConAlguna) {
+      mostrarMensajeReserva("Vaya, justo se acaba de reservar ese hueco. Elige otra hora.", "error");
+      btn.disabled = false;
+      document.getElementById("pasoConfirmar").classList.add("hidden");
+      document.getElementById("pasoCalendario").classList.remove("hidden");
+      calcularYRenderSlots();
+      return;
+    }
+
+    const nuevaRef = db.ref("citas").push();
+    const nuevaId = nuevaRef.key;
+    const datosCita = {
+      clienteId: usuarioActual.uid,
+      clienteNombre: clientePerfil.nombre || "",
+      clienteTelefono: clientePerfil.telefono || "",
+      servicioId: servicioElegido.id,
+      servicioNombre: servicioElegido.nombre,
+      duracion: servicioElegido.duracion,
+      precio: servicioElegido.precio,
+      fecha: fechaElegida,
+      inicio: slotElegido.inicio,
+      fin: slotElegido.fin,
+      estado: "confirmada",
+      creadaEn: Date.now()
+    };
+
+    const updates = {};
+    updates["citas/" + nuevaId] = datosCita;
+    updates["citasPorUsuario/" + usuarioActual.uid + "/" + nuevaId] = datosCita;
+    updates["citasPublicas/" + nuevaId] = {
+      fecha: fechaElegida, inicio: slotElegido.inicio, fin: slotElegido.fin, estado: "confirmada"
+    };
+    await db.ref().update(updates);
+
+    mostrarMensajeReserva("¡Cita reservada correctamente!", "success");
+    setTimeout(() => {
+      // Reset y volver al paso 1
+      document.getElementById("pasoConfirmar").classList.add("hidden");
+      document.getElementById("pasoServicio").classList.remove("hidden");
+      servicioElegido = null;
+      fechaElegida = null;
+      slotElegido = null;
+      cargarMisCitas();
+    }, 1400);
+  } catch (err) {
+    mostrarMensajeReserva("Error al reservar: " + err.message, "error");
+  }
+  btn.disabled = false;
+});
+
+function mostrarMensajeReserva(texto, tipo) {
+  const el = document.getElementById("msgReserva");
+  el.textContent = texto;
+  el.className = "msg " + (tipo || "");
+}
+
+// =========================================================
+// MIS CITAS
+// =========================================================
+async function cargarMisCitas() {
+  const snap = await db.ref("citasPorUsuario/" + usuarioActual.uid).get();
+  const datos = snap.val() || {};
+  const hoy = hoyISO();
+  const ahoraMin = horaActualMin();
+
+  const ids = Object.keys(datos);
+
+  const esFutura = (c) => {
+    if (c.fecha > hoy) return true;
+    if (c.fecha === hoy && horaAMin(c.inicio) > ahoraMin) return true;
+    return false;
+  };
+
+  const proximas = ids.filter(id => datos[id].estado === "confirmada" && esFutura(datos[id]))
+    .sort((a, b) => (datos[a].fecha + datos[a].inicio).localeCompare(datos[b].fecha + datos[b].inicio));
+
+  const historial = ids.filter(id => !(datos[id].estado === "confirmada" && esFutura(datos[id])))
+    .sort((a, b) => (datos[b].fecha + datos[b].inicio).localeCompare(datos[a].fecha + datos[a].inicio));
+
+  renderListaCitas("listaProximasCitas", proximas, datos, true);
+  renderListaCitas("listaHistorialCitas", historial, datos, false);
+}
+
+function renderListaCitas(contId, ids, datos, permitirCancelar) {
+  const cont = document.getElementById(contId);
+  if (ids.length === 0) {
+    cont.innerHTML = `<div class="empty">${permitirCancelar ? "No tienes citas próximas" : "Aún no tienes historial"}</div>`;
+    return;
+  }
+  const etiquetas = { confirmada: "Confirmada", completada: "Completada", cancelada: "Cancelada", noShow: "No asistió" };
+
+  cont.innerHTML = ids.map(id => {
+    const c = datos[id];
+    const fechaFmt = new Date(c.fecha + "T00:00:00").toLocaleDateString("es-ES", { weekday: 'short', day: 'numeric', month: 'short' });
+    let botonCancelar = "";
+    if (permitirCancelar) {
+      const minutosHastaCita = (new Date(c.fecha + "T" + c.inicio).getTime() - Date.now()) / 60000;
+      const puedeCancelar = minutosHastaCita >= horasCancelacion * 60;
+      if (puedeCancelar) {
+        botonCancelar = `<button class="btn-cancelar-cita" data-cancelar="${id}">Cancelar cita</button>`;
+      } else {
+        botonCancelar = `<div class="cita-bloqueo-cancelar">Ya no se puede cancelar (menos de ${horasCancelacion}h de antelación)</div>`;
+      }
+    }
+    return `
+      <div class="cita-item">
+        <div class="cita-top">
+          <div>
+            <div class="cita-servicio">${escapeHtml(c.servicioNombre)}</div>
+            <div class="cita-fecha">${fechaFmt} · ${c.inicio}</div>
+          </div>
+          <span class="badge ${c.estado}">${etiquetas[c.estado] || c.estado}</span>
+        </div>
+        ${botonCancelar}
+      </div>`;
+  }).join("");
+
+  cont.querySelectorAll("[data-cancelar]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      if (confirm("¿Seguro que quieres cancelar esta cita?")) {
+        const id = btn.dataset.cancelar;
+        const updates = {};
+        updates["citas/" + id + "/estado"] = "cancelada";
+        updates["citasPorUsuario/" + usuarioActual.uid + "/" + id + "/estado"] = "cancelada";
+        updates["citasPublicas/" + id + "/estado"] = "cancelada";
+        await db.ref().update(updates);
+        cargarMisCitas();
+      }
+    });
+  });
+}
+</script>
+</body>
+</html>
