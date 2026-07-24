@@ -12,7 +12,7 @@ jobs:
       FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
       FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
       GMAIL_USER: ${{ secrets.GMAIL_USER }}
-      GMAIL_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+      GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
 
     steps:
 
