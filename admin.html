@@ -177,6 +177,42 @@
     align-items: center;
   }
   .dia-horas input { padding: 8px 10px; font-size: 13px; }
+
+  .dia-bloque {
+    padding: 12px 0;
+    border-bottom: 1px solid #334155;
+  }
+  .dia-bloque:last-child { border-bottom: none; }
+  .dia-cabecera {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .dia-franjas {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-left: 50px;
+  }
+  .franja-fila {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .franja-fila input[type="time"] { padding: 8px 10px; font-size: 13px; }
+  .franja-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #94a3b8;
+    cursor: pointer;
+    user-select: none;
+  }
+  .franja-toggle input { width: auto; }
+  .franja2-inputs { display: flex; gap: 8px; align-items: center; }
+  .franja2-inputs.disabled { opacity: 0.4; pointer-events: none; }
   .switch {
     position: relative;
     width: 40px; height: 22px;
@@ -251,8 +287,9 @@
   <!-- ===== SERVICIOS ===== -->
   <div class="panel active" id="panel-servicios">
     <div class="card">
-      <h2>Nuevo servicio</h2>
+      <h2 id="tituloFormServicio">Nuevo servicio</h2>
       <form id="formServicio">
+        <input type="hidden" id="svEditId" value="">
         <div class="field">
           <label for="svNombre">Nombre</label>
           <input type="text" id="svNombre" placeholder="Corte de pelo" required>
@@ -268,6 +305,7 @@
           </div>
         </div>
         <button type="submit" class="primary" id="btnGuardarServicio">Añadir servicio</button>
+        <button type="button" class="btn-logout-inline hidden" id="btnCancelarEdicionServicio">Cancelar edición</button>
       </form>
       <div class="msg" id="msgServicio"></div>
     </div>
@@ -282,6 +320,7 @@
   <div class="panel" id="panel-horario">
     <div class="card">
       <h2>Horario semanal</h2>
+      <div style="font-size:12px; color:#64748b; margin-bottom:14px;">Puedes añadir una segunda franja por día (por ejemplo, mañana y tarde si cierras a mediodía).</div>
       <div id="listaHorario"></div>
       <button class="primary" id="btnGuardarHorario" style="margin-top:16px;">Guardar horario</button>
       <div class="msg" id="msgHorario"></div>
@@ -293,9 +332,15 @@
     <div class="card">
       <h2>Añadir festivo / vacaciones / horario especial</h2>
       <form id="formExcepcion">
-        <div class="field">
-          <label for="exFecha">Fecha</label>
-          <input type="date" id="exFecha" required>
+        <div class="row-2">
+          <div class="field">
+            <label for="exDesde">Desde</label>
+            <input type="date" id="exDesde" required>
+          </div>
+          <div class="field">
+            <label for="exHasta">Hasta</label>
+            <input type="date" id="exHasta" required>
+          </div>
         </div>
         <div class="field">
           <label for="exTipo">Tipo</label>
@@ -410,10 +455,13 @@ function mostrarMensaje(id, texto, tipo) {
 // =========================================================
 // SERVICIOS
 // =========================================================
+let serviciosCache = {};
+
 function cargarServicios() {
   db.ref("servicios").on("value", (snap) => {
     const cont = document.getElementById("listaServicios");
     const datos = snap.val();
+    serviciosCache = datos || {};
     if (!datos) {
       cont.innerHTML = '<div class="empty">Aún no has añadido ningún servicio</div>';
       return;
@@ -429,12 +477,28 @@ function cargarServicios() {
             <div class="item-sub">${s.duracion} min · ${Number(s.precio).toFixed(2)} €</div>
           </div>
           <div class="item-actions">
+            <button class="icon-btn" data-edit="${id}" title="Editar">✏️</button>
             <button class="icon-btn" data-toggle="${id}" title="${activo ? 'Desactivar' : 'Activar'}">${activo ? '⏸' : '▶'}</button>
             <button class="icon-btn danger" data-delete="${id}" title="Eliminar">🗑</button>
           </div>
         </div>`;
     }).join("");
 
+    cont.querySelectorAll("[data-edit]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.edit;
+        const s = datos[id];
+        document.getElementById("svEditId").value = id;
+        document.getElementById("svNombre").value = s.nombre;
+        document.getElementById("svDuracion").value = s.duracion;
+        document.getElementById("svPrecio").value = s.precio;
+        document.getElementById("tituloFormServicio").textContent = "Editar servicio";
+        document.getElementById("btnGuardarServicio").textContent = "Guardar cambios";
+        document.getElementById("btnCancelarEdicionServicio").classList.remove("hidden");
+        document.getElementById("svNombre").focus();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    });
     cont.querySelectorAll("[data-toggle]").forEach(btn => {
       btn.addEventListener("click", async () => {
         const id = btn.dataset.toggle;
@@ -447,26 +511,44 @@ function cargarServicios() {
         const id = btn.dataset.delete;
         if (confirm("¿Eliminar este servicio? Esta acción no se puede deshacer.")) {
           await db.ref("servicios/" + id).remove();
+          if (document.getElementById("svEditId").value === id) resetFormServicio();
         }
       });
     });
   });
 }
 
+function resetFormServicio() {
+  document.getElementById("formServicio").reset();
+  document.getElementById("svEditId").value = "";
+  document.getElementById("tituloFormServicio").textContent = "Nuevo servicio";
+  document.getElementById("btnGuardarServicio").textContent = "Añadir servicio";
+  document.getElementById("btnCancelarEdicionServicio").classList.add("hidden");
+}
+
+document.getElementById("btnCancelarEdicionServicio").addEventListener("click", resetFormServicio);
+
 document.getElementById("formServicio").addEventListener("submit", async (e) => {
   e.preventDefault();
   const btn = document.getElementById("btnGuardarServicio");
+  const editId = document.getElementById("svEditId").value;
   const nombre = document.getElementById("svNombre").value.trim();
   const duracion = parseInt(document.getElementById("svDuracion").value, 10);
   const precio = parseFloat(document.getElementById("svPrecio").value);
 
   btn.disabled = true;
   try {
-    await db.ref("servicios").push({
-      nombre, duracion, precio, activo: true, creadoEn: Date.now()
-    });
-    document.getElementById("formServicio").reset();
-    mostrarMensaje("msgServicio", "Servicio añadido correctamente", "success");
+    if (editId) {
+      const activoActual = (serviciosCache[editId] && serviciosCache[editId].activo !== false);
+      await db.ref("servicios/" + editId).update({ nombre, duracion, precio });
+      mostrarMensaje("msgServicio", "Servicio actualizado correctamente", "success");
+    } else {
+      await db.ref("servicios").push({
+        nombre, duracion, precio, activo: true, creadoEn: Date.now()
+      });
+      mostrarMensaje("msgServicio", "Servicio añadido correctamente", "success");
+    }
+    resetFormServicio();
   } catch (err) {
     mostrarMensaje("msgServicio", "Error al guardar: " + err.message, "error");
   }
@@ -474,26 +556,61 @@ document.getElementById("formServicio").addEventListener("submit", async (e) => 
 });
 
 // =========================================================
-// HORARIO SEMANAL
+// HORARIO SEMANAL (hasta 2 franjas por día)
 // =========================================================
 function renderHorario(datos) {
   const cont = document.getElementById("listaHorario");
   cont.innerHTML = DIAS.map(d => {
-    const dia = (datos && datos[d.key]) || { activo: false, inicio: "09:00", fin: "20:00" };
+    const dia = (datos && datos[d.key]) || {};
+    const activo = !!dia.activo;
+    const franjas = (dia.franjas && dia.franjas.length) ? dia.franjas : [{ inicio: "09:00", fin: "20:00" }];
+    const f1 = franjas[0] || { inicio: "09:00", fin: "14:00" };
+    const f2 = franjas[1] || null;
+    const f2activa = !!f2;
+
     return `
-      <div class="dia-row">
-        <div class="dia-nombre">${d.nombre}</div>
-        <label class="switch">
-          <input type="checkbox" data-dia="${d.key}" data-campo="activo" ${dia.activo ? "checked" : ""}>
-          <span class="slider"></span>
-        </label>
-        <div class="dia-horas">
-          <input type="time" data-dia="${d.key}" data-campo="inicio" value="${dia.inicio || '09:00'}">
-          <span style="color:#64748b;">–</span>
-          <input type="time" data-dia="${d.key}" data-campo="fin" value="${dia.fin || '20:00'}">
+      <div class="dia-bloque" data-dia-bloque="${d.key}">
+        <div class="dia-cabecera">
+          <div class="dia-nombre">${d.nombre}</div>
+          <label class="switch">
+            <input type="checkbox" data-dia="${d.key}" data-campo="activo" ${activo ? "checked" : ""}>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="dia-franjas" ${activo ? "" : 'style="display:none;"'}>
+          <div class="franja-fila">
+            <input type="time" data-dia="${d.key}" data-campo="f1inicio" value="${f1.inicio || '09:00'}">
+            <span style="color:#64748b;">–</span>
+            <input type="time" data-dia="${d.key}" data-campo="f1fin" value="${f1.fin || '20:00'}">
+          </div>
+          <label class="franja-toggle">
+            <input type="checkbox" data-dia="${d.key}" data-campo="f2activa" ${f2activa ? "checked" : ""}>
+            Añadir segunda franja (ej. turno de tarde)
+          </label>
+          <div class="franja2-inputs ${f2activa ? "" : "disabled"}" data-dia="${d.key}" data-franja2-inputs>
+            <input type="time" data-dia="${d.key}" data-campo="f2inicio" value="${(f2 && f2.inicio) || '16:00'}">
+            <span style="color:#64748b;">–</span>
+            <input type="time" data-dia="${d.key}" data-campo="f2fin" value="${(f2 && f2.fin) || '20:00'}">
+          </div>
         </div>
       </div>`;
   }).join("");
+
+  // Mostrar/ocultar franjas al activar/desactivar el día
+  cont.querySelectorAll('[data-campo="activo"]').forEach(chk => {
+    chk.addEventListener("change", () => {
+      const bloque = cont.querySelector(`[data-dia-bloque="${chk.dataset.dia}"]`);
+      bloque.querySelector(".dia-franjas").style.display = chk.checked ? "flex" : "none";
+    });
+  });
+
+  // Activar/desactivar los inputs de la segunda franja
+  cont.querySelectorAll('[data-campo="f2activa"]').forEach(chk => {
+    chk.addEventListener("change", () => {
+      const inputs = cont.querySelector(`[data-franja2-inputs][data-dia="${chk.dataset.dia}"]`);
+      inputs.classList.toggle("disabled", !chk.checked);
+    });
+  });
 }
 
 function cargarHorario() {
@@ -507,9 +624,16 @@ document.getElementById("btnGuardarHorario").addEventListener("click", async () 
   const horario = {};
   DIAS.forEach(d => {
     const activo = document.querySelector(`[data-dia="${d.key}"][data-campo="activo"]`).checked;
-    const inicio = document.querySelector(`[data-dia="${d.key}"][data-campo="inicio"]`).value;
-    const fin = document.querySelector(`[data-dia="${d.key}"][data-campo="fin"]`).value;
-    horario[d.key] = { activo, inicio, fin };
+    const f1inicio = document.querySelector(`[data-dia="${d.key}"][data-campo="f1inicio"]`).value;
+    const f1fin = document.querySelector(`[data-dia="${d.key}"][data-campo="f1fin"]`).value;
+    const f2activa = document.querySelector(`[data-dia="${d.key}"][data-campo="f2activa"]`).checked;
+    const f2inicio = document.querySelector(`[data-dia="${d.key}"][data-campo="f2inicio"]`).value;
+    const f2fin = document.querySelector(`[data-dia="${d.key}"][data-campo="f2fin"]`).value;
+
+    const franjas = [{ inicio: f1inicio, fin: f1fin }];
+    if (f2activa) franjas.push({ inicio: f2inicio, fin: f2fin });
+
+    horario[d.key] = { activo, franjas };
   });
 
   btn.disabled = true;
@@ -533,26 +657,31 @@ exTipo.addEventListener("change", () => {
 document.getElementById("formExcepcion").addEventListener("submit", async (e) => {
   e.preventDefault();
   const btn = document.getElementById("btnGuardarExcepcion");
-  const fecha = document.getElementById("exFecha").value;
+  const desde = document.getElementById("exDesde").value;
+  const hasta = document.getElementById("exHasta").value;
   const tipo = document.getElementById("exTipo").value;
   const motivo = document.getElementById("exMotivo").value.trim();
   const inicio = document.getElementById("exInicio").value;
   const fin = document.getElementById("exFin").value;
 
-  if (!fecha) return;
+  if (!desde || !hasta) return;
+
+  if (hasta < desde) {
+    mostrarMensaje("msgExcepcion", 'La fecha "hasta" no puede ser anterior a "desde"', "error");
+    return;
+  }
 
   btn.disabled = true;
   try {
-    const dato = { fecha, tipo, motivo: motivo || "" };
+    const dato = { desde, hasta, tipo, motivo: motivo || "", creadoEn: Date.now() };
     if (tipo === "especial") {
       dato.inicio = inicio || "09:00";
       dato.fin = fin || "20:00";
     }
-    // Usamos la propia fecha como clave para evitar duplicados en el mismo día
-    await db.ref("excepciones/" + fecha).set(dato);
+    await db.ref("excepciones").push(dato);
     document.getElementById("formExcepcion").reset();
     document.getElementById("exHorasEspeciales").classList.add("hidden");
-    mostrarMensaje("msgExcepcion", "Fecha añadida correctamente", "success");
+    mostrarMensaje("msgExcepcion", "Fechas añadidas correctamente", "success");
   } catch (err) {
     mostrarMensaje("msgExcepcion", "Error al guardar: " + err.message, "error");
   }
@@ -568,33 +697,39 @@ function cargarExcepciones() {
       return;
     }
     const hoy = new Date().toISOString().slice(0, 10);
-    const fechas = Object.keys(datos).filter(f => f >= hoy).sort();
-    if (fechas.length === 0) {
+    // Mostramos las que aún no han terminado (hasta >= hoy), ordenadas por fecha de inicio
+    const ids = Object.keys(datos)
+      .filter(id => datos[id].hasta >= hoy)
+      .sort((a, b) => datos[a].desde.localeCompare(datos[b].desde));
+
+    if (ids.length === 0) {
       cont.innerHTML = '<div class="empty">No hay fechas futuras marcadas</div>';
       return;
     }
     const etiquetas = { festivo: "Festivo", vacaciones: "Vacaciones", especial: "Horario especial" };
-    cont.innerHTML = fechas.map(f => {
-      const ex = datos[f];
-      const fechaFmt = new Date(f + "T00:00:00").toLocaleDateString("es-ES", { weekday: 'short', day: 'numeric', month: 'short' });
+    const fmt = (f) => new Date(f + "T00:00:00").toLocaleDateString("es-ES", { day: 'numeric', month: 'short' });
+
+    cont.innerHTML = ids.map(id => {
+      const ex = datos[id];
+      const rango = ex.desde === ex.hasta ? fmt(ex.desde) : `${fmt(ex.desde)} – ${fmt(ex.hasta)}`;
       const detalle = ex.tipo === "especial" ? `${ex.inicio} - ${ex.fin}` : (ex.motivo || etiquetas[ex.tipo]);
       return `
         <div class="item">
           <div class="item-info">
-            <div class="item-title">${fechaFmt} <span class="badge ${ex.tipo}">${etiquetas[ex.tipo]}</span></div>
+            <div class="item-title">${rango} <span class="badge ${ex.tipo}">${etiquetas[ex.tipo]}</span></div>
             <div class="item-sub">${escapeHtml(detalle)}</div>
           </div>
           <div class="item-actions">
-            <button class="icon-btn danger" data-delete-ex="${f}" title="Eliminar">🗑</button>
+            <button class="icon-btn danger" data-delete-ex="${id}" title="Eliminar">🗑</button>
           </div>
         </div>`;
     }).join("");
 
     cont.querySelectorAll("[data-delete-ex]").forEach(btn => {
       btn.addEventListener("click", async () => {
-        const fecha = btn.dataset.deleteEx;
-        if (confirm("¿Eliminar esta fecha marcada?")) {
-          await db.ref("excepciones/" + fecha).remove();
+        const id = btn.dataset.deleteEx;
+        if (confirm("¿Eliminar este periodo marcado?")) {
+          await db.ref("excepciones/" + id).remove();
         }
       });
     });
