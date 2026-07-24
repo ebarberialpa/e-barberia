@@ -53,3 +53,6 @@ await transporter.sendMail({
 });
 
 console.log("Correo enviado correctamente.");
+await Promise.all(getApps().map(app => deleteApp(app)));
+
+process.exit(0);
