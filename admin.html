@@ -117,6 +117,20 @@
   button.primary:hover { background: #2563eb; }
   button.primary:disabled { background: #475569; cursor: not-allowed; }
 
+  button.secondary {
+    width: 100%;
+    padding: 11px;
+    border: 1px solid #475569;
+    border-radius: 9px;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  button.secondary:hover { border-color: #94a3b8; color: #f1f5f9; }
+
   .item {
     display: flex;
     align-items: center;
@@ -292,20 +306,20 @@
         <input type="hidden" id="svEditId" value="">
         <div class="field">
           <label for="svNombre">Nombre</label>
-          <input type="text" id="svNombre" placeholder="Corte de pelo" required>
+          <input type="text" id="svNombre" placeholder="Ej: Corte de pelo" required>
         </div>
         <div class="row-2">
           <div class="field">
             <label for="svDuracion">Duración (min)</label>
-            <input type="number" id="svDuracion" placeholder="30" min="5" step="5" required>
+            <input type="number" id="svDuracion" placeholder="Ej: 30" min="5" step="5" required>
           </div>
           <div class="field">
             <label for="svPrecio">Precio (€)</label>
-            <input type="number" id="svPrecio" placeholder="15" min="0" step="0.5" required>
+            <input type="number" id="svPrecio" placeholder="Ej: 15" min="0" step="0.5" required>
           </div>
         </div>
         <button type="submit" class="primary" id="btnGuardarServicio">Añadir servicio</button>
-        <button type="button" class="btn-logout-inline hidden" id="btnCancelarEdicionServicio">Cancelar edición</button>
+        <button type="button" class="secondary hidden" id="btnCancelarEdicionServicio">Cancelar edición</button>
       </form>
       <div class="msg" id="msgServicio"></div>
     </div>
@@ -330,8 +344,9 @@
   <!-- ===== EXCEPCIONES ===== -->
   <div class="panel" id="panel-excepciones">
     <div class="card">
-      <h2>Añadir festivo / vacaciones / horario especial</h2>
+      <h2 id="tituloFormExcepcion">Añadir festivo / vacaciones / horario especial</h2>
       <form id="formExcepcion">
+        <input type="hidden" id="exEditId" value="">
         <div class="row-2">
           <div class="field">
             <label for="exDesde">Desde</label>
@@ -365,6 +380,7 @@
           <input type="text" id="exMotivo" placeholder="Ej: Navidad, vacaciones familiares...">
         </div>
         <button type="submit" class="primary" id="btnGuardarExcepcion">Añadir</button>
+        <button type="button" class="secondary hidden" id="btnCancelarEdicionExcepcion">Cancelar edición</button>
       </form>
       <div class="msg" id="msgExcepcion"></div>
     </div>
@@ -654,9 +670,19 @@ exTipo.addEventListener("change", () => {
   document.getElementById("exHorasEspeciales").classList.toggle("hidden", exTipo.value !== "especial");
 });
 
+const exDesdeInput = document.getElementById("exDesde");
+const exHastaInput = document.getElementById("exHasta");
+exDesdeInput.addEventListener("change", () => {
+  exHastaInput.min = exDesdeInput.value;
+  if (exHastaInput.value && exHastaInput.value < exDesdeInput.value) {
+    exHastaInput.value = exDesdeInput.value;
+  }
+});
+
 document.getElementById("formExcepcion").addEventListener("submit", async (e) => {
   e.preventDefault();
   const btn = document.getElementById("btnGuardarExcepcion");
+  const editId = document.getElementById("exEditId").value;
   const desde = document.getElementById("exDesde").value;
   const hasta = document.getElementById("exHasta").value;
   const tipo = document.getElementById("exTipo").value;
@@ -673,25 +699,48 @@ document.getElementById("formExcepcion").addEventListener("submit", async (e) =>
 
   btn.disabled = true;
   try {
-    const dato = { desde, hasta, tipo, motivo: motivo || "", creadoEn: Date.now() };
+    const dato = { desde, hasta, tipo, motivo: motivo || "" };
     if (tipo === "especial") {
       dato.inicio = inicio || "09:00";
       dato.fin = fin || "20:00";
     }
-    await db.ref("excepciones").push(dato);
-    document.getElementById("formExcepcion").reset();
-    document.getElementById("exHorasEspeciales").classList.add("hidden");
-    mostrarMensaje("msgExcepcion", "Fechas añadidas correctamente", "success");
+    if (editId) {
+      // set() en vez de update() para que, si cambiamos de "especial" a "festivo",
+      // se borren los campos inicio/fin sobrantes en vez de quedar huérfanos
+      dato.creadoEn = (excepcionesCache[editId] && excepcionesCache[editId].creadoEn) || Date.now();
+      await db.ref("excepciones/" + editId).set(dato);
+      mostrarMensaje("msgExcepcion", "Periodo actualizado correctamente", "success");
+    } else {
+      dato.creadoEn = Date.now();
+      await db.ref("excepciones").push(dato);
+      mostrarMensaje("msgExcepcion", "Fechas añadidas correctamente", "success");
+    }
+    resetFormExcepcion();
   } catch (err) {
     mostrarMensaje("msgExcepcion", "Error al guardar: " + err.message, "error");
   }
   btn.disabled = false;
 });
 
+function resetFormExcepcion() {
+  document.getElementById("formExcepcion").reset();
+  document.getElementById("exEditId").value = "";
+  exHastaInput.min = "";
+  document.getElementById("exHorasEspeciales").classList.add("hidden");
+  document.getElementById("tituloFormExcepcion").textContent = "Añadir festivo / vacaciones / horario especial";
+  document.getElementById("btnGuardarExcepcion").textContent = "Añadir";
+  document.getElementById("btnCancelarEdicionExcepcion").classList.add("hidden");
+}
+
+document.getElementById("btnCancelarEdicionExcepcion").addEventListener("click", resetFormExcepcion);
+
+let excepcionesCache = {};
+
 function cargarExcepciones() {
   db.ref("excepciones").on("value", (snap) => {
     const cont = document.getElementById("listaExcepciones");
     const datos = snap.val();
+    excepcionesCache = datos || {};
     if (!datos) {
       cont.innerHTML = '<div class="empty">No hay festivos ni fechas especiales marcadas</div>';
       return;
@@ -720,16 +769,40 @@ function cargarExcepciones() {
             <div class="item-sub">${escapeHtml(detalle)}</div>
           </div>
           <div class="item-actions">
+            <button class="icon-btn" data-edit-ex="${id}" title="Editar">✏️</button>
             <button class="icon-btn danger" data-delete-ex="${id}" title="Eliminar">🗑</button>
           </div>
         </div>`;
     }).join("");
+
+    cont.querySelectorAll("[data-edit-ex]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.editEx;
+        const ex = datos[id];
+        document.getElementById("exEditId").value = id;
+        document.getElementById("exDesde").value = ex.desde;
+        exHastaInput.min = ex.desde;
+        document.getElementById("exHasta").value = ex.hasta;
+        document.getElementById("exTipo").value = ex.tipo;
+        document.getElementById("exMotivo").value = ex.motivo || "";
+        document.getElementById("exHorasEspeciales").classList.toggle("hidden", ex.tipo !== "especial");
+        if (ex.tipo === "especial") {
+          document.getElementById("exInicio").value = ex.inicio || "";
+          document.getElementById("exFin").value = ex.fin || "";
+        }
+        document.getElementById("tituloFormExcepcion").textContent = "Editar periodo";
+        document.getElementById("btnGuardarExcepcion").textContent = "Guardar cambios";
+        document.getElementById("btnCancelarEdicionExcepcion").classList.remove("hidden");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    });
 
     cont.querySelectorAll("[data-delete-ex]").forEach(btn => {
       btn.addEventListener("click", async () => {
         const id = btn.dataset.deleteEx;
         if (confirm("¿Eliminar este periodo marcado?")) {
           await db.ref("excepciones/" + id).remove();
+          if (document.getElementById("exEditId").value === id) resetFormExcepcion();
         }
       });
     });
