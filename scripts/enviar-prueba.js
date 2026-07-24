@@ -17,7 +17,7 @@ if (!getApps().length) {
 const db = getDatabase();
 
 // Leer un nodo de prueba
-const snapshot = await db.ref("configuracion/empresa").get();
+const snapshot = await db.ref("ajustes/horasCancelacion").get();
 
 console.log("Datos leídos:");
 console.log(snapshot.val());
