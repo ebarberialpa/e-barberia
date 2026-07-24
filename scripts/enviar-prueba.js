@@ -9,16 +9,17 @@ admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
 });
 
-const db = admin.firestore();
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: process.env.FIREBASE_DATABASE_URL
+});
 
-// Leer un documento de prueba
 
-const snap = await db
-    .collection("configuracion")
-    .doc("empresa")
-    .get();
+const db = admin.database();
 
-console.log("Documento leído:", snap.exists);
+const snapshot = await db.ref("configuracion/empresa").get();
+
+console.log(snapshot.val());
 
 // Configurar Gmail
 
