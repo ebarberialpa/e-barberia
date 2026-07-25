@@ -424,6 +424,15 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
+// Cerramos la conexión websocket con Firebase cuando la pestaña pasa a segundo plano
+// o se cierra, y la reabrimos al volver. Así no se quedan conexiones abiertas sin
+// necesidad, algo importante en el plan gratuito (Spark) de Firebase.
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) db.goOffline();
+  else db.goOnline();
+});
+window.addEventListener("beforeunload", () => db.goOffline());
+
 const DIAS = [
   { key: "lunes", nombre: "Lunes" },
   { key: "martes", nombre: "Martes" },
