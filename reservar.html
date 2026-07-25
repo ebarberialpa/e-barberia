@@ -7,6 +7,7 @@
 <meta name="theme-color" content="#1e293b">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { overflow-x: hidden; max-width: 100%; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: #1e293b;
@@ -116,9 +117,10 @@
 
   .cal-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 3px;
     text-align: center;
+    width: 100%;
   }
   .cal-dow { font-size: 11px; color: #64748b; padding-bottom: 6px; }
   .cal-day {
@@ -128,12 +130,84 @@
     font-size: 13px;
     cursor: pointer;
     color: #e2e8f0;
+    min-width: 0;
+  }
+
+  @media (max-width: 380px) {
+    .container { padding: 16px 10px; }
+    .card { padding: 16px 12px; }
+    .cal-grid { gap: 2px; }
+    .cal-day { font-size: 11px; border-radius: 6px; }
+    .cal-dow { font-size: 10px; }
   }
   .cal-day.empty { cursor: default; }
   .cal-day.disabled { color: #475569; cursor: not-allowed; }
   .cal-day.today { border: 1px solid #3b82f6; }
+  .cal-day.disponible { background: rgba(59,130,246,0.12); }
   .cal-day:not(.disabled):not(.empty):hover { background: #334155; }
   .cal-day.selected { background: #3b82f6; color: #fff; font-weight: 600; }
+
+  /* --- Preferencia horaria --- */
+  .pref-opciones {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .pref-opcion {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #e2e8f0;
+  }
+  .pref-opcion:has(input:checked) { border-color: #3b82f6; background: rgba(59,130,246,0.08); }
+  .pref-opcion input { accent-color: #3b82f6; }
+
+  /* --- Modal de huecos --- */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,0.75);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 50;
+    padding: 0;
+  }
+  .modal-caja {
+    background: #273549;
+    border-radius: 18px 18px 0 0;
+    padding: 20px;
+    width: 100%;
+    max-width: 640px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  @media (min-width: 480px) {
+    .modal-overlay { align-items: center; padding: 20px; }
+    .modal-caja { border-radius: 16px; }
+  }
+  .modal-cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .modal-cabecera > div { font-size: 15px; font-weight: 600; color: #f1f5f9; }
+  .modal-cerrar {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .modal-cerrar:hover { color: #f1f5f9; }
 
   .slots-titulo { font-size: 13px; color: #94a3b8; margin: 18px 0 10px; }
   .slots-grid {
@@ -229,6 +303,11 @@
     color: #64748b;
     margin-top: 6px;
   }
+  .cita-nota-espera {
+    font-size: 11px;
+    color: #fbbf24;
+    margin-top: 6px;
+  }
 
   .empty { text-align: center; color: #64748b; font-size: 13px; padding: 24px 0; }
   .msg { font-size: 13px; text-align: center; margin-top: 10px; min-height: 16px; }
@@ -281,37 +360,91 @@
       </div>
     </div>
 
-    <!-- ===== PASO 2 - CALENDARIO Y HUECOS ===== -->
-    <div id="pasoCalendario" class="hidden">
-      <span class="paso-atras" id="volverAServicio">← Cambiar servicio</span>
+    <!-- ===== PASO 2 - PREFERENCIA HORARIA ===== -->
+    <div id="pasoPreferencia" class="hidden">
+      <span class="paso-atras" id="volverAServicioDesdePreferencia">← Cambiar servicio</span>
       <div class="card">
-        <h2 id="tituloServicioElegido">2. Elige fecha y hora</h2>
+        <h2>2. ¿Qué hora prefieres?</h2>
+        <div class="pref-opciones">
+          <label class="pref-opcion">
+            <input type="radio" name="preferencia" value="indiferente" checked>
+            <span>Indiferente</span>
+          </label>
+          <label class="pref-opcion">
+            <input type="radio" name="preferencia" value="manana">
+            <span>Mañana</span>
+          </label>
+          <label class="pref-opcion">
+            <input type="radio" name="preferencia" value="tarde">
+            <span>Tarde</span>
+          </label>
+          <label class="pref-opcion">
+            <input type="radio" name="preferencia" value="personalizada">
+            <span>Horario concreto</span>
+          </label>
+        </div>
+        <div class="row-2 hidden" id="prefPersonalizadaInputs" style="margin-top:14px;">
+          <div class="field">
+            <label for="prefDesde">Desde</label>
+            <input type="time" id="prefDesde" value="16:00">
+          </div>
+          <div class="field">
+            <label for="prefHasta">Hasta</label>
+            <input type="time" id="prefHasta" value="17:00">
+          </div>
+        </div>
+        <button class="primary" id="btnContinuarPreferencia" style="margin-top:18px;">Ver calendario</button>
+      </div>
+    </div>
+
+    <!-- ===== PASO 3 - CALENDARIO ===== -->
+    <div id="pasoCalendario" class="hidden">
+      <span class="paso-atras" id="volverAServicio">← Cambiar hora preferida</span>
+      <div class="card">
+        <h2 id="tituloServicioElegido">3. Elige un día</h2>
+        <div style="font-size:12px; color:#64748b; margin-bottom:14px;">Los días con fondo azulado tienen huecos disponibles según tu preferencia.</div>
         <div class="cal-header">
           <button class="cal-nav" id="calMesAnterior">‹</button>
           <div class="mes" id="calMesTexto"></div>
           <button class="cal-nav" id="calMesSiguiente">›</button>
         </div>
         <div class="cal-grid" id="calGrid"></div>
-
-        <div id="bloqueSlots" class="hidden">
-          <div class="slots-titulo" id="slotsTitulo"></div>
-          <div class="slots-grid" id="slotsGrid"></div>
-          <div class="empty hidden" id="sinHuecos">No quedan huecos disponibles este día. Prueba con otra fecha.</div>
-        </div>
       </div>
     </div>
 
-    <!-- ===== PASO 3 - CONFIRMAR ===== -->
+    <!-- ===== MODAL DE HUECOS DISPONIBLES ===== -->
+    <div class="modal-overlay hidden" id="modalSlots">
+      <div class="modal-caja">
+        <div class="modal-cabecera">
+          <div id="modalSlotsTitulo"></div>
+          <button class="modal-cerrar" id="cerrarModalSlots">✕</button>
+        </div>
+        <div class="slots-grid" id="slotsGrid"></div>
+        <div class="empty hidden" id="sinHuecos">No quedan huecos disponibles este día según tu preferencia. Prueba con otro día u otra franja horaria.</div>
+      </div>
+    </div>
+
+    <!-- ===== PASO 4 - CONFIRMAR ===== -->
     <div id="pasoConfirmar" class="hidden">
       <span class="paso-atras" id="volverACalendario">← Cambiar fecha/hora</span>
       <div class="card">
-        <h2>3. Confirma tu cita</h2>
+        <h2>4. Confirma tu cita</h2>
         <div class="resumen-linea"><span class="label">Servicio</span><span class="valor" id="resServicio"></span></div>
         <div class="resumen-linea"><span class="label">Fecha</span><span class="valor" id="resFecha"></span></div>
         <div class="resumen-linea"><span class="label">Hora</span><span class="valor" id="resHora"></span></div>
         <div class="resumen-linea"><span class="label">Duración</span><span class="valor" id="resDuracion"></span></div>
         <div class="resumen-linea"><span class="label">Precio</span><span class="valor" id="resPrecio"></span></div>
+
+        <label class="pref-opcion" style="margin-top:16px; display:flex; align-items:flex-start;">
+          <input type="checkbox" id="chkListaEspera" style="margin-top:2px;">
+          <span style="font-size:12px; color:#94a3b8; line-height:1.5;">
+            <strong style="color:#e2e8f0;">Apuntarme en lista de espera.</strong>
+            Si se libera un hueco antes, dentro de tu preferencia horaria, te llamaremos por si quieres adelantar la cita.
+          </span>
+        </label>
+
         <button class="primary" id="btnConfirmarReserva" style="margin-top:16px;">Confirmar reserva</button>
+        <button class="primary hidden" id="btnReservaConfirmada" style="margin-top:16px; background:#16a34a;">✓ Cita confirmada — Ver mis citas</button>
         <div class="msg" id="msgReserva"></div>
       </div>
     </div>
@@ -351,6 +484,15 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
+
+// Cerramos la conexión websocket con Firebase cuando la pestaña pasa a segundo plano
+// o se cierra, y la reabrimos al volver. Así no se quedan conexiones abiertas sin
+// necesidad, algo importante en el plan gratuito (Spark) de Firebase.
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) db.goOffline();
+  else db.goOnline();
+});
+window.addEventListener("beforeunload", () => db.goOffline());
 
 const DIAS_SEMANA = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
 const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
@@ -476,10 +618,7 @@ function renderServicios() {
     const s = servicios[id];
     return `
       <div class="servicio-opcion" data-servicio="${id}">
-        <div>
-          <div class="nombre">${escapeHtml(s.nombre)}</div>
-          <div class="duracion">${s.duracion} min</div>
-        </div>
+        <div class="nombre">${escapeHtml(s.nombre)}</div>
         <div class="precio">${Number(s.precio).toFixed(2)} €</div>
       </div>`;
   }).join("");
@@ -487,15 +626,20 @@ function renderServicios() {
   cont.querySelectorAll("[data-servicio]").forEach(el => {
     el.addEventListener("click", () => {
       servicioElegido = { id: el.dataset.servicio, ...servicios[el.dataset.servicio] };
-      irAPasoCalendario();
+      irAPasoPreferencia();
     });
   });
 }
 
-document.getElementById("volverAServicio").addEventListener("click", () => {
-  document.getElementById("pasoCalendario").classList.add("hidden");
+document.getElementById("volverAServicioDesdePreferencia").addEventListener("click", () => {
+  document.getElementById("pasoPreferencia").classList.add("hidden");
   document.getElementById("pasoServicio").classList.remove("hidden");
   servicioElegido = null;
+});
+
+document.getElementById("volverAServicio").addEventListener("click", () => {
+  document.getElementById("pasoCalendario").classList.add("hidden");
+  document.getElementById("pasoPreferencia").classList.remove("hidden");
   fechaElegida = null;
   slotElegido = null;
 });
@@ -506,16 +650,52 @@ document.getElementById("volverACalendario").addEventListener("click", () => {
 });
 
 // =========================================================
-// PASO 2: CALENDARIO
+// PASO 2: PREFERENCIA HORARIA
+// =========================================================
+function irAPasoPreferencia() {
+  document.getElementById("pasoServicio").classList.add("hidden");
+  document.getElementById("pasoPreferencia").classList.remove("hidden");
+}
+
+document.querySelectorAll('input[name="preferencia"]').forEach(radio => {
+  radio.addEventListener("change", () => {
+    document.getElementById("prefPersonalizadaInputs").classList.toggle("hidden", radio.value !== "personalizada");
+  });
+});
+
+// Ventana horaria (en minutos) según la preferencia elegida
+function obtenerVentanaPreferencia() {
+  const tipo = document.querySelector('input[name="preferencia"]:checked').value;
+  if (tipo === "manana") return { inicio: 0, fin: horaAMin("14:00") };
+  if (tipo === "tarde") return { inicio: horaAMin("14:00"), fin: 24 * 60 };
+  if (tipo === "personalizada") {
+    const desde = document.getElementById("prefDesde").value || "00:00";
+    const hasta = document.getElementById("prefHasta").value || "23:59";
+    return { inicio: horaAMin(desde), fin: horaAMin(hasta) };
+  }
+  return { inicio: 0, fin: 24 * 60 }; // indiferente
+}
+
+document.getElementById("btnContinuarPreferencia").addEventListener("click", () => {
+  const ventana = obtenerVentanaPreferencia();
+  if (ventana.fin <= ventana.inicio) {
+    alert('La hora "hasta" debe ser posterior a la hora "desde".');
+    return;
+  }
+  irAPasoCalendario();
+});
+
+// =========================================================
+// PASO 3: CALENDARIO
 // =========================================================
 function irAPasoCalendario() {
-  document.getElementById("pasoServicio").classList.add("hidden");
+  mostrarMensajeReserva("", "");
+  document.getElementById("pasoPreferencia").classList.add("hidden");
   document.getElementById("pasoCalendario").classList.remove("hidden");
-  document.getElementById("tituloServicioElegido").textContent = `2. Elige fecha y hora — ${servicioElegido.nombre}`;
+  document.getElementById("tituloServicioElegido").textContent = `3. Elige un día — ${servicioElegido.nombre}`;
   mesVisible = new Date();
   mesVisible.setDate(1);
   fechaElegida = null;
-  document.getElementById("bloqueSlots").classList.add("hidden");
   renderCalendario();
 }
 
@@ -554,8 +734,20 @@ function franjasParaFecha(fechaISO) {
   return dia.franjas || [];
 }
 
+// Recorta las franjas de un día a la ventana de la preferencia horaria elegida
+function franjasFiltradasPorPreferencia(fechaISO) {
+  const ventana = obtenerVentanaPreferencia();
+  return franjasParaFecha(fechaISO)
+    .map(f => ({
+      inicio: Math.max(horaAMin(f.inicio), ventana.inicio),
+      fin: Math.min(horaAMin(f.fin), ventana.fin)
+    }))
+    .filter(f => f.fin > f.inicio);
+}
+
 function diaTieneHuecoPosible(fechaISO) {
-  return franjasParaFecha(fechaISO).length > 0;
+  const duracion = servicioElegido.duracion;
+  return franjasFiltradasPorPreferencia(fechaISO).some(f => (f.fin - f.inicio) >= duracion);
 }
 
 function renderCalendario() {
@@ -571,10 +763,11 @@ function renderCalendario() {
   for (let dia = 1; dia <= diasEnMes; dia++) {
     const fechaISO = mesVisible.getFullYear() + "-" + String(mesVisible.getMonth() + 1).padStart(2, "0") + "-" + String(dia).padStart(2, "0");
     const esPasado = fechaISO < hoy;
-    const cerrado = !diaTieneHuecoPosible(fechaISO);
-    const disabled = esPasado || cerrado;
+    const disponible = !esPasado && diaTieneHuecoPosible(fechaISO);
+    const disabled = esPasado || !disponible;
     const clases = ["cal-day"];
     if (disabled) clases.push("disabled");
+    if (disponible) clases.push("disponible");
     if (fechaISO === hoy) clases.push("today");
     if (fechaISO === fechaElegida) clases.push("selected");
     html += `<div class="${clases.join(' ')}" ${disabled ? "" : `data-fecha="${fechaISO}"`}>${dia}</div>`;
@@ -587,19 +780,32 @@ function renderCalendario() {
     el.addEventListener("click", () => {
       fechaElegida = el.dataset.fecha;
       renderCalendario();
-      calcularYRenderSlots();
+      abrirModalSlots();
     });
   });
 }
 
-async function calcularYRenderSlots() {
-  const bloque = document.getElementById("bloqueSlots");
-  bloque.classList.remove("hidden");
-  document.getElementById("slotsTitulo").textContent = "Horas disponibles";
-  document.getElementById("slotsGrid").innerHTML = "";
+// =========================================================
+// MODAL DE HUECOS DISPONIBLES
+// =========================================================
+function cerrarModalSlots() {
+  document.getElementById("modalSlots").classList.add("hidden");
+}
+document.getElementById("cerrarModalSlots").addEventListener("click", cerrarModalSlots);
+document.getElementById("modalSlots").addEventListener("click", (e) => {
+  if (e.target.id === "modalSlots") cerrarModalSlots();
+});
+
+async function abrirModalSlots() {
+  const modal = document.getElementById("modalSlots");
+  modal.classList.remove("hidden");
+
+  const fechaFmt = new Date(fechaElegida + "T00:00:00").toLocaleDateString("es-ES", { weekday: 'long', day: 'numeric', month: 'long' });
+  document.getElementById("modalSlotsTitulo").textContent = fechaFmt;
+  document.getElementById("slotsGrid").innerHTML = '<div class="empty">Buscando huecos...</div>';
   document.getElementById("sinHuecos").classList.add("hidden");
 
-  const franjas = franjasParaFecha(fechaElegida);
+  const franjas = franjasFiltradasPorPreferencia(fechaElegida);
   const duracion = servicioElegido.duracion;
 
   // Citas ya reservadas ese día (tabla pública, solo fecha/hora/estado, sin datos personales)
@@ -614,14 +820,14 @@ async function calcularYRenderSlots() {
 
   const slots = [];
   franjas.forEach(f => {
-    const inicioMin = horaAMin(f.inicio);
-    const finMin = horaAMin(f.fin);
-    for (let t = inicioMin; t + duracion <= finMin; t += duracion) {
+    for (let t = f.inicio; t + duracion <= f.fin; t += duracion) {
       if (esHoy && t <= minAhora) continue;
       const solapa = ocupados.some(o => t < o.fin && (t + duracion) > o.inicio);
       if (!solapa) slots.push(t);
     }
   });
+
+  document.getElementById("slotsGrid").innerHTML = "";
 
   if (slots.length === 0) {
     document.getElementById("sinHuecos").classList.remove("hidden");
@@ -636,6 +842,7 @@ async function calcularYRenderSlots() {
     el.addEventListener("click", () => {
       const inicioMin = parseInt(el.dataset.min, 10);
       slotElegido = { inicio: minAHora(inicioMin), fin: minAHora(inicioMin + duracion) };
+      cerrarModalSlots();
       irAPasoConfirmar();
     });
   });
@@ -645,8 +852,15 @@ async function calcularYRenderSlots() {
 // PASO 3: CONFIRMAR
 // =========================================================
 function irAPasoConfirmar() {
+  mostrarMensajeReserva("", "");
   document.getElementById("pasoCalendario").classList.add("hidden");
   document.getElementById("pasoConfirmar").classList.remove("hidden");
+
+  // Reset del estado visual del paso, por si se viene de una reserva anterior
+  document.getElementById("chkListaEspera").checked = false;
+  document.getElementById("btnConfirmarReserva").classList.remove("hidden");
+  document.getElementById("btnConfirmarReserva").disabled = false;
+  document.getElementById("btnReservaConfirmada").classList.add("hidden");
 
   const fechaFmt = new Date(fechaElegida + "T00:00:00").toLocaleDateString("es-ES", { weekday: 'long', day: 'numeric', month: 'long' });
   document.getElementById("resServicio").textContent = servicioElegido.nombre;
@@ -658,7 +872,10 @@ function irAPasoConfirmar() {
 
 document.getElementById("btnConfirmarReserva").addEventListener("click", async () => {
   const btn = document.getElementById("btnConfirmarReserva");
+  // Bloqueo inmediato y visual: en cuanto se pulsa, desaparece el botón, así un doble toque
+  // accidental no puede disparar el submit dos veces (el segundo toque ya no encuentra botón).
   btn.disabled = true;
+  btn.classList.add("hidden");
   mostrarMensajeReserva("", "");
 
   try {
@@ -676,14 +893,18 @@ document.getElementById("btnConfirmarReserva").addEventListener("click", async (
     if (chocaConAlguna) {
       mostrarMensajeReserva("Vaya, justo se acaba de reservar ese hueco. Elige otra hora.", "error");
       btn.disabled = false;
+      btn.classList.remove("hidden");
       document.getElementById("pasoConfirmar").classList.add("hidden");
       document.getElementById("pasoCalendario").classList.remove("hidden");
-      calcularYRenderSlots();
+      abrirModalSlots();
       return;
     }
 
     const nuevaRef = db.ref("citas").push();
     const nuevaId = nuevaRef.key;
+    const quiereListaEspera = document.getElementById("chkListaEspera").checked;
+    const listaEsperaId = quiereListaEspera ? db.ref("listaEspera").push().key : null;
+
     const datosCita = {
       clienteId: usuarioActual.uid,
       clienteNombre: clientePerfil.nombre || "",
@@ -696,6 +917,7 @@ document.getElementById("btnConfirmarReserva").addEventListener("click", async (
       inicio: slotElegido.inicio,
       fin: slotElegido.fin,
       estado: "confirmada",
+      listaEsperaId: listaEsperaId,
       creadaEn: Date.now()
     };
 
@@ -705,22 +927,54 @@ document.getElementById("btnConfirmarReserva").addEventListener("click", async (
     updates["citasPublicas/" + nuevaId] = {
       fecha: fechaElegida, inicio: slotElegido.inicio, fin: slotElegido.fin, estado: "confirmada"
     };
+
+    if (quiereListaEspera) {
+      const ventana = obtenerVentanaPreferencia();
+      const datosListaEspera = {
+        clienteId: usuarioActual.uid,
+        clienteNombre: clientePerfil.nombre || "",
+        clienteTelefono: clientePerfil.telefono || "",
+        clienteEmail: usuarioActual.email,
+        citaId: nuevaId,
+        servicioId: servicioElegido.id,
+        servicioNombre: servicioElegido.nombre,
+        duracion: servicioElegido.duracion,
+        preferenciaInicioMin: ventana.inicio,
+        preferenciaFinMin: ventana.fin,
+        fechaCitaActual: fechaElegida,
+        horaCitaActual: slotElegido.inicio,
+        estado: "pendiente",
+        creadaEn: Date.now()
+      };
+      updates["listaEspera/" + listaEsperaId] = datosListaEspera;
+      updates["listaEsperaPorUsuario/" + usuarioActual.uid + "/" + listaEsperaId] = datosListaEspera;
+    }
+
     await db.ref().update(updates);
 
-    mostrarMensajeReserva("¡Cita reservada correctamente!", "success");
-    setTimeout(() => {
-      // Reset y volver al paso 1
-      document.getElementById("pasoConfirmar").classList.add("hidden");
-      document.getElementById("pasoServicio").classList.remove("hidden");
-      servicioElegido = null;
-      fechaElegida = null;
-      slotElegido = null;
-      cargarMisCitas();
-    }, 1400);
+    // En vez de un mensaje que desaparece solo (y que podía verse de nuevo por error
+    // al reservar otra cita), mostramos un botón fijo que lleva directo a "Mis citas".
+    document.getElementById("btnReservaConfirmada").classList.remove("hidden");
   } catch (err) {
     mostrarMensajeReserva("Error al reservar: " + err.message, "error");
+    btn.disabled = false;
+    btn.classList.remove("hidden");
   }
-  btn.disabled = false;
+});
+
+document.getElementById("btnReservaConfirmada").addEventListener("click", () => {
+  // Reset y volver al paso 1, mostrando "Mis citas"
+  document.getElementById("pasoConfirmar").classList.add("hidden");
+  document.getElementById("pasoServicio").classList.remove("hidden");
+  servicioElegido = null;
+  fechaElegida = null;
+  slotElegido = null;
+  cargarMisCitas();
+
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.querySelector('.tab[data-panel="mis-citas"]').classList.add("active");
+  document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+  document.getElementById("panel-mis-citas").classList.add("active");
 });
 
 function mostrarMensajeReserva(texto, tipo) {
@@ -733,8 +987,12 @@ function mostrarMensajeReserva(texto, tipo) {
 // MIS CITAS
 // =========================================================
 async function cargarMisCitas() {
-  const snap = await db.ref("citasPorUsuario/" + usuarioActual.uid).get();
-  const datos = snap.val() || {};
+  const [snapCitas, snapListaEspera] = await Promise.all([
+    db.ref("citasPorUsuario/" + usuarioActual.uid).get(),
+    db.ref("listaEsperaPorUsuario/" + usuarioActual.uid).get()
+  ]);
+  const datos = snapCitas.val() || {};
+  const listaEsperaDatos = snapListaEspera.val() || {};
   const hoy = hoyISO();
   const ahoraMin = horaActualMin();
 
@@ -752,11 +1010,11 @@ async function cargarMisCitas() {
   const historial = ids.filter(id => !(datos[id].estado === "confirmada" && esFutura(datos[id])))
     .sort((a, b) => (datos[b].fecha + datos[b].inicio).localeCompare(datos[a].fecha + datos[a].inicio));
 
-  renderListaCitas("listaProximasCitas", proximas, datos, true);
-  renderListaCitas("listaHistorialCitas", historial, datos, false);
+  renderListaCitas("listaProximasCitas", proximas, datos, listaEsperaDatos, true);
+  renderListaCitas("listaHistorialCitas", historial, datos, listaEsperaDatos, false);
 }
 
-function renderListaCitas(contId, ids, datos, permitirCancelar) {
+function renderListaCitas(contId, ids, datos, listaEsperaDatos, permitirCancelar) {
   const cont = document.getElementById(contId);
   if (ids.length === 0) {
     cont.innerHTML = `<div class="empty">${permitirCancelar ? "No tienes citas próximas" : "Aún no tienes historial"}</div>`;
@@ -767,6 +1025,12 @@ function renderListaCitas(contId, ids, datos, permitirCancelar) {
   cont.innerHTML = ids.map(id => {
     const c = datos[id];
     const fechaFmt = new Date(c.fecha + "T00:00:00").toLocaleDateString("es-ES", { weekday: 'short', day: 'numeric', month: 'short' });
+
+    let notaListaEspera = "";
+    if (c.listaEsperaId && listaEsperaDatos[c.listaEsperaId] && listaEsperaDatos[c.listaEsperaId].estado === "pendiente") {
+      notaListaEspera = `<div class="cita-nota-espera">🕓 Solicitado adelantar cita si es posible</div>`;
+    }
+
     let botonCancelar = "";
     if (permitirCancelar) {
       const minutosHastaCita = (new Date(c.fecha + "T" + c.inicio).getTime() - Date.now()) / 60000;
@@ -786,6 +1050,7 @@ function renderListaCitas(contId, ids, datos, permitirCancelar) {
           </div>
           <span class="badge ${c.estado}">${etiquetas[c.estado] || c.estado}</span>
         </div>
+        ${notaListaEspera}
         ${botonCancelar}
       </div>`;
   }).join("");
@@ -794,16 +1059,23 @@ function renderListaCitas(contId, ids, datos, permitirCancelar) {
     btn.addEventListener("click", async () => {
       if (confirm("¿Seguro que quieres cancelar esta cita?")) {
         const id = btn.dataset.cancelar;
+        const cita = datos[id];
         const updates = {};
         updates["citas/" + id + "/estado"] = "cancelada";
         updates["citasPorUsuario/" + usuarioActual.uid + "/" + id + "/estado"] = "cancelada";
         updates["citasPublicas/" + id + "/estado"] = "cancelada";
+        // Si esta cita tenía una solicitud de lista de espera activa, la cancelamos también
+        if (cita.listaEsperaId) {
+          updates["listaEspera/" + cita.listaEsperaId + "/estado"] = "cancelada";
+          updates["listaEsperaPorUsuario/" + usuarioActual.uid + "/" + cita.listaEsperaId + "/estado"] = "cancelada";
+        }
         await db.ref().update(updates);
         cargarMisCitas();
       }
     });
   });
 }
+
 </script>
 </body>
 </html>
