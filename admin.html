@@ -1,4 +1,5 @@
-<!DOCTYPE html>
+
+   <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -337,8 +338,16 @@
   .cal-day.today { border: 1px solid #3b82f6; }
   .cal-day:not(.empty):hover { background: #334155; }
   .cal-day.selected { background: #3b82f6; color: #fff; font-weight: 600; }
-  .cal-day .cal-day-dots { display: flex; gap: 2px; margin-top: 2px; }
-  .cal-day .punto-citas { width: 4px; height: 4px; border-radius: 50%; background: #60a5fa; }
+  .cal-day .cal-day-num {
+    font-size: 9px;
+    font-weight: 700;
+    color: #fff;
+    background: #3b82f6;
+    border-radius: 6px;
+    padding: 0 4px;
+    margin-top: 2px;
+    line-height: 1.4;
+  }
   .cal-day .icono-espera { font-size: 9px; position: absolute; top: 1px; right: 3px; }
 
   @media (max-width: 380px) {
@@ -400,6 +409,53 @@
     color: #cbd5e1;
   }
   .lista-espera-detalle .fila { display: flex; justify-content: space-between; padding: 3px 0; }
+
+  .franja-titulo {
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin: 16px 0 8px;
+  }
+  .franja-titulo:first-child { margin-top: 0; }
+
+  .badge-manual {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 20px;
+    background: rgba(168,85,247,0.15);
+    color: #c084fc;
+    font-weight: 600;
+    vertical-align: middle;
+  }
+
+  .btn-cita-manual {
+    width: 100%;
+    padding: 11px;
+    border-radius: 9px;
+    border: 1px dashed #475569;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 13px;
+    cursor: pointer;
+    margin-bottom: 16px;
+  }
+  .btn-cita-manual:hover { border-color: #3b82f6; color: #3b82f6; }
+
+  .form-cita-manual {
+    background: #1e293b;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+  .nota-coincidencia {
+    font-size: 12px;
+    margin-top: 6px;
+    min-height: 16px;
+  }
+  .nota-coincidencia.encontrado { color: #4ade80; }
+  .nota-coincidencia.nuevo { color: #64748b; }
 </style>
 </head>
 <body>
@@ -434,6 +490,33 @@
 
   <div class="card" id="cardDiaDetalle" style="display:none;">
     <h2 id="tituloDiaDetalle"></h2>
+
+    <button class="btn-cita-manual" id="btnAbrirCitaManual">+ Añadir cita manual (cliente que llama por teléfono)</button>
+
+    <div class="form-cita-manual hidden" id="formCitaManual">
+      <div class="field">
+        <label for="manualTelefono">Teléfono</label>
+        <input type="tel" id="manualTelefono" placeholder="Ej: 600123456">
+        <div class="nota-coincidencia" id="notaCoincidenciaTelefono"></div>
+      </div>
+      <div class="field">
+        <label for="manualNombre">Nombre</label>
+        <input type="text" id="manualNombre" placeholder="Ej: María García">
+        <div class="nota-coincidencia" id="notaCoincidenciaNombre"></div>
+      </div>
+      <div class="field">
+        <label for="manualServicio">Servicio</label>
+        <select id="manualServicio"></select>
+      </div>
+      <div class="field">
+        <label for="manualHora">Hora</label>
+        <input type="time" id="manualHora">
+      </div>
+      <button class="primary" id="btnGuardarCitaManual">Añadir cita</button>
+      <button class="secondary" id="btnCancelarCitaManual">Cancelar</button>
+      <div class="msg" id="msgCitaManual"></div>
+    </div>
+
     <div id="listaCitasDia"></div>
 
     <div id="bloqueListaEsperaCompatible" style="display:none; margin-top:18px; padding-top:16px; border-top:1px solid #334155;">
@@ -1183,7 +1266,7 @@ function renderCalendarioAdmin() {
     html += `<div class="${clases.join(' ')}" data-fecha="${fechaISO}">
       ${tieneEspera ? '<span class="icono-espera">🕓</span>' : ''}
       <span>${dia}</span>
-      ${numCitas > 0 ? `<span class="cal-day-dots">${'<span class="punto-citas"></span>'.repeat(Math.min(numCitas, 3))}</span>` : ''}
+      ${numCitas > 0 ? `<span class="cal-day-num">${numCitas}</span>` : ''}
     </div>`;
   }
 
@@ -1213,6 +1296,8 @@ async function mostrarDetalleDia(fechaISO) {
   card.style.display = "block";
   const fechaFmt = new Date(fechaISO + "T00:00:00").toLocaleDateString("es-ES", { weekday: 'long', day: 'numeric', month: 'long' });
   document.getElementById("tituloDiaDetalle").textContent = fechaFmt;
+  document.getElementById("btnAbrirCitaManual").dataset.fecha = fechaISO;
+  ocultarFormCitaManual();
 
   const citas = citasDelDia(fechaISO).filter(c => c.estado !== "cancelada");
   const cont = document.getElementById("listaCitasDia");
@@ -1220,8 +1305,8 @@ async function mostrarDetalleDia(fechaISO) {
   if (citas.length === 0) {
     cont.innerHTML = '<div class="empty">No hay citas este día</div>';
   } else {
-    // Cargamos el nº de ausencias de cada cliente implicado, para el aviso junto a su nombre
-    const clientesUnicos = [...new Set(citas.map(c => c.clienteId))];
+    // Cargamos el nº de ausencias de cada cliente implicado (solo los que tienen cuenta), para el aviso junto a su nombre
+    const clientesUnicos = [...new Set(citas.map(c => c.clienteId).filter(Boolean))];
     const perfiles = {};
     await Promise.all(clientesUnicos.map(async uid => {
       const snap = await db.ref("clientes/" + uid).get();
@@ -1230,9 +1315,10 @@ async function mostrarDetalleDia(fechaISO) {
 
     const etiquetas = { confirmada: "Confirmada", completada: "Completada", cancelada: "Cancelada", noShow: "No asistió" };
 
-    cont.innerHTML = citas.map(c => {
-      const noShows = (perfiles[c.clienteId] && perfiles[c.clienteId].noShows) || 0;
+    const renderCita = (c) => {
+      const noShows = c.clienteId ? ((perfiles[c.clienteId] && perfiles[c.clienteId].noShows) || 0) : 0;
       const avisoNoShow = noShows > 0 ? `<span class="aviso-noshow-cliente">⚠️ ${noShows} ausencia${noShows > 1 ? 's' : ''} previa${noShows > 1 ? 's' : ''}</span>` : "";
+      const avisoManual = c.esManual ? `<span class="badge-manual">Manual${!c.clienteId ? ' · sin cuenta' : ''}</span>` : "";
       let acciones = "";
       if (c.estado === "confirmada") {
         acciones = `
@@ -1248,14 +1334,24 @@ async function mostrarDetalleDia(fechaISO) {
         <div class="cita-dia-item">
           <div class="cita-dia-top">
             <div>
-              <div class="cita-dia-hora">${c.inicio}</div>
+              <div class="cita-dia-hora">${c.inicio} ${avisoManual}</div>
               <div class="cita-dia-cliente">${escapeHtml(c.clienteNombre)} · ${escapeHtml(c.clienteTelefono)}${avisoNoShow}</div>
               <div class="cita-dia-servicio">${escapeHtml(c.servicioNombre)} · ${Number(c.precio).toFixed(2)} €</div>
             </div>
           </div>
           ${acciones}
         </div>`;
-    }).join("");
+    };
+
+    const manana = citas.filter(c => horaAMin(c.inicio) < horaAMin("14:00"));
+    const tarde = citas.filter(c => horaAMin(c.inicio) >= horaAMin("14:00"));
+
+    let html = "";
+    html += `<div class="franja-titulo">☀️ Mañana</div>`;
+    html += manana.length ? manana.map(renderCita).join("") : '<div class="empty" style="padding:10px 0;">Sin citas por la mañana</div>';
+    html += `<div class="franja-titulo">🌙 Tarde</div>`;
+    html += tarde.length ? tarde.map(renderCita).join("") : '<div class="empty" style="padding:10px 0;">Sin citas por la tarde</div>';
+    cont.innerHTML = html;
 
     cont.querySelectorAll("[data-completar]").forEach(btn => {
       btn.addEventListener("click", () => marcarEstadoCita(btn.dataset.completar, "completada"));
@@ -1319,22 +1415,26 @@ async function marcarEstadoCita(citaId, nuevoEstado) {
 
   const updates = {};
   updates["citas/" + citaId + "/estado"] = nuevoEstado;
-  updates["citasPorUsuario/" + cita.clienteId + "/" + citaId + "/estado"] = nuevoEstado;
   updates["citasPublicas/" + citaId + "/estado"] = nuevoEstado;
 
-  // Si esta cita tenía una solicitud de lista de espera enlazada, la cancelamos (ya no aplica)
-  if (cita.listaEsperaId && nuevoEstado !== "confirmada") {
-    updates["listaEspera/" + cita.listaEsperaId + "/estado"] = "cancelada";
-    updates["listaEsperaPorUsuario/" + cita.clienteId + "/" + cita.listaEsperaId + "/estado"] = "cancelada";
+  // Solo hay copia en citasPorUsuario y contadores de cliente si la cita está vinculada a una cuenta
+  if (cita.clienteId) {
+    updates["citasPorUsuario/" + cita.clienteId + "/" + citaId + "/estado"] = nuevoEstado;
+    if (cita.listaEsperaId && nuevoEstado !== "confirmada") {
+      updates["listaEspera/" + cita.listaEsperaId + "/estado"] = "cancelada";
+      updates["listaEsperaPorUsuario/" + cita.clienteId + "/" + cita.listaEsperaId + "/estado"] = "cancelada";
+    }
   }
 
   await db.ref().update(updates);
 
-  // Contadores del cliente: completadas y ausencias
-  if (nuevoEstado === "completada") {
-    await db.ref("clientes/" + cita.clienteId + "/citasCompletadas").transaction(cur => (cur || 0) + 1);
-  } else if (nuevoEstado === "noShow") {
-    await db.ref("clientes/" + cita.clienteId + "/noShows").transaction(cur => (cur || 0) + 1);
+  // Contadores del cliente: completadas y ausencias (solo si tiene cuenta)
+  if (cita.clienteId) {
+    if (nuevoEstado === "completada") {
+      await db.ref("clientes/" + cita.clienteId + "/citasCompletadas").transaction(cur => (cur || 0) + 1);
+    } else if (nuevoEstado === "noShow") {
+      await db.ref("clientes/" + cita.clienteId + "/noShows").transaction(cur => (cur || 0) + 1);
+    }
   }
 }
 
@@ -1391,6 +1491,159 @@ async function moverCitaDesdeListaEspera(listaEsperaId, fechaISO) {
   await db.ref().update(updates);
   alert("Cita movida correctamente. Recuerda avisar al cliente si aún no lo has hecho.");
 }
+
+// =========================================================
+// CITAS MANUALES (cliente que llama por teléfono)
+// =========================================================
+let clienteVinculadoManual = null; // { uid, nombre, telefono, email } si coincide con un cliente dado de alta
+
+function ocultarFormCitaManual() {
+  document.getElementById("formCitaManual").classList.add("hidden");
+  document.getElementById("btnAbrirCitaManual").classList.remove("hidden");
+}
+
+document.getElementById("btnAbrirCitaManual").addEventListener("click", () => {
+  document.getElementById("formCitaManual").classList.remove("hidden");
+  document.getElementById("btnAbrirCitaManual").classList.add("hidden");
+
+  clienteVinculadoManual = null;
+  document.getElementById("manualTelefono").value = "";
+  document.getElementById("manualNombre").value = "";
+  document.getElementById("manualHora").value = "";
+  document.getElementById("notaCoincidenciaTelefono").textContent = "";
+  document.getElementById("notaCoincidenciaNombre").textContent = "";
+  document.getElementById("msgCitaManual").textContent = "";
+
+  // Rellenamos el selector de servicios activos
+  const sel = document.getElementById("manualServicio");
+  const idsServicios = Object.keys(serviciosCache).filter(id => serviciosCache[id].activo !== false);
+  sel.innerHTML = idsServicios.map(id =>
+    `<option value="${id}">${escapeHtml(serviciosCache[id].nombre)} (${serviciosCache[id].duracion} min)</option>`
+  ).join("");
+});
+
+document.getElementById("btnCancelarCitaManual").addEventListener("click", ocultarFormCitaManual);
+
+function limpiarTelefono(tel) {
+  return (tel || "").replace(/\s|\+|-/g, "");
+}
+
+// Búsqueda de coincidencia por teléfono (con pequeño debounce para no lanzar una consulta por cada tecla)
+let debounceTelefono = null;
+document.getElementById("manualTelefono").addEventListener("input", (e) => {
+  clearTimeout(debounceTelefono);
+  const valor = limpiarTelefono(e.target.value);
+  clienteVinculadoManual = null;
+  document.getElementById("notaCoincidenciaTelefono").className = "nota-coincidencia";
+  document.getElementById("notaCoincidenciaTelefono").textContent = "";
+
+  if (valor.length < 9) return;
+  debounceTelefono = setTimeout(async () => {
+    const snap = await db.ref("clientes").orderByChild("telefono").equalTo(valor).get();
+    const datos = snap.val();
+    if (datos) {
+      const uid = Object.keys(datos)[0];
+      const c = datos[uid];
+      clienteVinculadoManual = { uid, nombre: c.nombre, telefono: c.telefono, email: c.email };
+      document.getElementById("manualNombre").value = c.nombre;
+      document.getElementById("notaCoincidenciaTelefono").className = "nota-coincidencia encontrado";
+      document.getElementById("notaCoincidenciaTelefono").textContent = "✓ Cliente encontrado: " + c.nombre + " (se vinculará a su cuenta)";
+    }
+  }, 400);
+});
+
+// Búsqueda de respaldo por nombre exacto, solo si el teléfono no encontró coincidencia
+let debounceNombre = null;
+document.getElementById("manualNombre").addEventListener("input", (e) => {
+  clearTimeout(debounceNombre);
+  if (clienteVinculadoManual) return; // ya vinculado por teléfono, no hace falta buscar más
+  const valor = e.target.value.trim();
+  document.getElementById("notaCoincidenciaNombre").textContent = "";
+
+  if (valor.length < 3) return;
+  debounceNombre = setTimeout(async () => {
+    if (clienteVinculadoManual) return;
+    const snap = await db.ref("clientes").orderByChild("nombre").equalTo(valor).get();
+    const datos = snap.val();
+    if (datos) {
+      const uid = Object.keys(datos)[0];
+      const c = datos[uid];
+      clienteVinculadoManual = { uid, nombre: c.nombre, telefono: c.telefono, email: c.email };
+      document.getElementById("manualTelefono").value = c.telefono;
+      document.getElementById("notaCoincidenciaNombre").className = "nota-coincidencia encontrado";
+      document.getElementById("notaCoincidenciaNombre").textContent = "✓ Cliente encontrado: se vinculará a su cuenta (" + c.telefono + ")";
+    }
+  }, 500);
+});
+
+document.getElementById("btnGuardarCitaManual").addEventListener("click", async () => {
+  const btn = document.getElementById("btnGuardarCitaManual");
+  const fechaISO = document.getElementById("btnAbrirCitaManual").dataset.fecha;
+  const telefono = limpiarTelefono(document.getElementById("manualTelefono").value);
+  const nombre = document.getElementById("manualNombre").value.trim();
+  const servicioId = document.getElementById("manualServicio").value;
+  const hora = document.getElementById("manualHora").value;
+  const msg = document.getElementById("msgCitaManual");
+  msg.textContent = "";
+
+  if (!telefono || !nombre || !servicioId || !hora) {
+    msg.className = "msg error";
+    msg.textContent = "Rellena teléfono, nombre, servicio y hora.";
+    return;
+  }
+
+  const servicio = serviciosCache[servicioId];
+  const inicioMin = horaAMin(hora);
+  const finMin = inicioMin + servicio.duracion;
+  const fin = minAHora(finMin);
+
+  // Comprobamos que no choque con ninguna cita ya confirmada ese día
+  const choca = citasDelDia(fechaISO).some(c => {
+    if (c.estado === "cancelada") return false;
+    return inicioMin < horaAMin(c.fin) && finMin > horaAMin(c.inicio);
+  });
+  if (choca) {
+    msg.className = "msg error";
+    msg.textContent = "Esa hora choca con otra cita ya existente ese día.";
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    const nuevaId = db.ref("citas").push().key;
+    const datosCita = {
+      clienteId: clienteVinculadoManual ? clienteVinculadoManual.uid : null,
+      clienteNombre: nombre,
+      clienteTelefono: telefono,
+      servicioId: servicioId,
+      servicioNombre: servicio.nombre,
+      duracion: servicio.duracion,
+      precio: servicio.precio,
+      fecha: fechaISO,
+      inicio: hora,
+      fin: fin,
+      estado: "confirmada",
+      listaEsperaId: null,
+      esManual: true,
+      creadaEn: Date.now()
+    };
+
+    const updates = {};
+    updates["citas/" + nuevaId] = datosCita;
+    updates["citasPublicas/" + nuevaId] = { fecha: fechaISO, inicio: hora, fin: fin, estado: "confirmada" };
+    // Si coincide con un cliente dado de alta, también aparece en su "Mis citas"
+    if (clienteVinculadoManual) {
+      updates["citasPorUsuario/" + clienteVinculadoManual.uid + "/" + nuevaId] = datosCita;
+    }
+
+    await db.ref().update(updates);
+    ocultarFormCitaManual();
+  } catch (err) {
+    msg.className = "msg error";
+    msg.textContent = "Error al guardar: " + err.message;
+  }
+  btn.disabled = false;
+});
 
 </script>
 </body>
