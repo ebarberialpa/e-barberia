@@ -167,6 +167,33 @@
   .pref-opcion:has(input:checked) { border-color: #3b82f6; background: rgba(59,130,246,0.08); }
   .pref-opcion input { accent-color: #3b82f6; }
 
+  .marco-personalizado {
+    margin-top: 14px;
+    padding: 14px;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    background: #1e293b;
+    transition: border-color 0.2s;
+  }
+  .marco-personalizado.resaltado { border-color: #3b82f6; }
+  .dias-semana-selector {
+    display: flex;
+    gap: 6px;
+  }
+  .dia-pill {
+    flex: 1;
+    text-align: center;
+    padding: 9px 0;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    cursor: pointer;
+    font-size: 12px;
+    color: #94a3b8;
+    user-select: none;
+  }
+  .dia-pill input { display: none; }
+  .dia-pill:has(input:checked) { background: #3b82f6; border-color: #3b82f6; color: #fff; font-weight: 600; }
+
   /* --- Modal de huecos --- */
   .modal-overlay {
     position: fixed;
@@ -378,21 +405,35 @@
             <input type="radio" name="preferencia" value="tarde">
             <span>Tarde</span>
           </label>
-          <label class="pref-opcion">
+          <label class="pref-opcion" id="pref-opcion-personalizada">
             <input type="radio" name="preferencia" value="personalizada">
             <span>Horario concreto</span>
           </label>
         </div>
-        <div class="row-2 hidden" id="prefPersonalizadaInputs" style="margin-top:14px;">
-          <div class="field">
-            <label for="prefDesde">Desde</label>
-            <input type="time" id="prefDesde" value="16:00">
+
+        <div class="marco-personalizado" id="marcoPersonalizado">
+          <div class="row-2">
+            <div class="field">
+              <label for="prefDesde">Desde</label>
+              <input type="time" id="prefDesde" value="16:00">
+            </div>
+            <div class="field">
+              <label for="prefHasta">Hasta</label>
+              <input type="time" id="prefHasta" value="17:00">
+            </div>
           </div>
-          <div class="field">
-            <label for="prefHasta">Hasta</label>
-            <input type="time" id="prefHasta" value="17:00">
+          <label style="display:block; font-size:12px; color:#94a3b8; margin:14px 0 8px;">Días que te vienen bien</label>
+          <div class="dias-semana-selector" id="diasSemanaSelector">
+            <label class="dia-pill"><input type="checkbox" class="pref-dia" value="lunes" checked><span>L</span></label>
+            <label class="dia-pill"><input type="checkbox" class="pref-dia" value="martes" checked><span>M</span></label>
+            <label class="dia-pill"><input type="checkbox" class="pref-dia" value="miercoles" checked><span>X</span></label>
+            <label class="dia-pill"><input type="checkbox" class="pref-dia" value="jueves" checked><span>J</span></label>
+            <label class="dia-pill"><input type="checkbox" class="pref-dia" value="viernes" checked><span>V</span></label>
+            <label class="dia-pill"><input type="checkbox" class="pref-dia" value="sabado" checked><span>S</span></label>
           </div>
+          <div style="font-size:11px; color:#64748b; margin-top:8px;">Esta franja y estos días solo se aplican si eliges "Horario concreto" arriba.</div>
         </div>
+
         <button class="primary" id="btnContinuarPreferencia" style="margin-top:18px;">Ver calendario</button>
       </div>
     </div>
@@ -432,7 +473,6 @@
         <div class="resumen-linea"><span class="label">Servicio</span><span class="valor" id="resServicio"></span></div>
         <div class="resumen-linea"><span class="label">Fecha</span><span class="valor" id="resFecha"></span></div>
         <div class="resumen-linea"><span class="label">Hora</span><span class="valor" id="resHora"></span></div>
-        <div class="resumen-linea"><span class="label">Duración</span><span class="valor" id="resDuracion"></span></div>
         <div class="resumen-linea"><span class="label">Precio</span><span class="valor" id="resPrecio"></span></div>
 
         <label class="pref-opcion" style="margin-top:16px; display:flex; align-items:flex-start;">
@@ -659,27 +699,32 @@ function irAPasoPreferencia() {
 
 document.querySelectorAll('input[name="preferencia"]').forEach(radio => {
   radio.addEventListener("change", () => {
-    document.getElementById("prefPersonalizadaInputs").classList.toggle("hidden", radio.value !== "personalizada");
+    document.getElementById("marcoPersonalizado").classList.toggle("resaltado", radio.value === "personalizada");
   });
 });
 
-// Ventana horaria (en minutos) según la preferencia elegida
+// Ventana horaria (en minutos) y días de la semana permitidos según la preferencia elegida
 function obtenerVentanaPreferencia() {
   const tipo = document.querySelector('input[name="preferencia"]:checked').value;
-  if (tipo === "manana") return { inicio: 0, fin: horaAMin("14:00") };
-  if (tipo === "tarde") return { inicio: horaAMin("14:00"), fin: 24 * 60 };
+  if (tipo === "manana") return { inicio: 0, fin: horaAMin("14:00"), dias: null };
+  if (tipo === "tarde") return { inicio: horaAMin("14:00"), fin: 24 * 60, dias: null };
   if (tipo === "personalizada") {
     const desde = document.getElementById("prefDesde").value || "00:00";
     const hasta = document.getElementById("prefHasta").value || "23:59";
-    return { inicio: horaAMin(desde), fin: horaAMin(hasta) };
+    const dias = Array.from(document.querySelectorAll(".pref-dia:checked")).map(el => el.value);
+    return { inicio: horaAMin(desde), fin: horaAMin(hasta), dias };
   }
-  return { inicio: 0, fin: 24 * 60 }; // indiferente
+  return { inicio: 0, fin: 24 * 60, dias: null }; // indiferente
 }
 
 document.getElementById("btnContinuarPreferencia").addEventListener("click", () => {
   const ventana = obtenerVentanaPreferencia();
   if (ventana.fin <= ventana.inicio) {
     alert('La hora "hasta" debe ser posterior a la hora "desde".');
+    return;
+  }
+  if (ventana.dias && ventana.dias.length === 0) {
+    alert("Marca al menos un día en el que te venga bien.");
     return;
   }
   irAPasoCalendario();
@@ -737,6 +782,10 @@ function franjasParaFecha(fechaISO) {
 // Recorta las franjas de un día a la ventana de la preferencia horaria elegida
 function franjasFiltradasPorPreferencia(fechaISO) {
   const ventana = obtenerVentanaPreferencia();
+  if (ventana.dias) {
+    const diaKey = DIAS_SEMANA[new Date(fechaISO + "T00:00:00").getDay()];
+    if (!ventana.dias.includes(diaKey)) return [];
+  }
   return franjasParaFecha(fechaISO)
     .map(f => ({
       inicio: Math.max(horaAMin(f.inicio), ventana.inicio),
@@ -866,7 +915,6 @@ function irAPasoConfirmar() {
   document.getElementById("resServicio").textContent = servicioElegido.nombre;
   document.getElementById("resFecha").textContent = fechaFmt;
   document.getElementById("resHora").textContent = slotElegido.inicio;
-  document.getElementById("resDuracion").textContent = servicioElegido.duracion + " min";
   document.getElementById("resPrecio").textContent = Number(servicioElegido.precio).toFixed(2) + " €";
 }
 
@@ -941,6 +989,7 @@ document.getElementById("btnConfirmarReserva").addEventListener("click", async (
         duracion: servicioElegido.duracion,
         preferenciaInicioMin: ventana.inicio,
         preferenciaFinMin: ventana.fin,
+        preferenciaDias: ventana.dias, // null = cualquier día, o array de días de la semana permitidos
         fechaCitaActual: fechaElegida,
         horaCitaActual: slotElegido.inicio,
         estado: "pendiente",
