@@ -169,6 +169,10 @@
   .badge.festivo { background: rgba(248,113,113,0.15); color: #f87171; }
   .badge.vacaciones { background: rgba(96,165,250,0.15); color: #60a5fa; }
   .badge.especial { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .badge.confirmada { background: rgba(96,165,250,0.15); color: #60a5fa; }
+  .badge.completada { background: rgba(74,222,128,0.15); color: #4ade80; }
+  .badge.cancelada { background: rgba(148,163,184,0.15); color: #94a3b8; }
+  .badge.noShow { background: rgba(248,113,113,0.15); color: #f87171; }
 
   .dia-row {
     display: flex;
@@ -276,6 +280,126 @@
     color: #64748b;
     font-size: 14px;
   }
+
+  .paso-atras {
+    font-size: 12px;
+    color: #64748b;
+    cursor: pointer;
+    margin-bottom: 12px;
+    display: inline-block;
+  }
+  .paso-atras:hover { color: #94a3b8; }
+
+  .leyenda-punto {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+  }
+
+  .cal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .cal-header .mes { font-size: 15px; font-weight: 600; color: #f1f5f9; text-transform: capitalize; }
+  .cal-nav {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+  }
+  .cal-nav:hover { color: #f1f5f9; }
+  .cal-nav:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 3px;
+    text-align: center;
+    width: 100%;
+  }
+  .cal-dow { font-size: 11px; color: #64748b; padding-bottom: 6px; }
+  .cal-day {
+    aspect-ratio: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    color: #e2e8f0;
+    min-width: 0;
+    position: relative;
+  }
+  .cal-day.empty { cursor: default; }
+  .cal-day.pasado { color: #475569; }
+  .cal-day.today { border: 1px solid #3b82f6; }
+  .cal-day:not(.empty):hover { background: #334155; }
+  .cal-day.selected { background: #3b82f6; color: #fff; font-weight: 600; }
+  .cal-day .cal-day-dots { display: flex; gap: 2px; margin-top: 2px; }
+  .cal-day .punto-citas { width: 4px; height: 4px; border-radius: 50%; background: #60a5fa; }
+  .cal-day .icono-espera { font-size: 9px; position: absolute; top: 1px; right: 3px; }
+
+  @media (max-width: 380px) {
+    .container { padding: 16px 10px; }
+    .card { padding: 16px 12px; }
+    .cal-grid { gap: 2px; }
+    .cal-day { font-size: 11px; border-radius: 6px; }
+    .cal-dow { font-size: 10px; }
+  }
+
+  .cita-dia-item {
+    padding: 12px;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    margin-bottom: 10px;
+  }
+  .cita-dia-top {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 6px;
+  }
+  .cita-dia-hora { font-size: 14px; font-weight: 700; color: #f1f5f9; }
+  .cita-dia-cliente { font-size: 13px; color: #e2e8f0; margin-top: 2px; }
+  .cita-dia-servicio { font-size: 12px; color: #94a3b8; margin-top: 1px; }
+  .cita-dia-acciones { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .btn-mini {
+    padding: 7px 11px;
+    border-radius: 7px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #94a3b8;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .btn-mini:hover { border-color: #64748b; color: #f1f5f9; }
+  .btn-mini.completar:hover { border-color: #4ade80; color: #4ade80; }
+  .btn-mini.noshow:hover { border-color: #f87171; color: #f87171; }
+  .aviso-noshow-cliente {
+    display: inline-block;
+    font-size: 10px;
+    color: #f87171;
+    margin-left: 6px;
+  }
+
+  .lista-espera-item {
+    padding: 12px;
+    border: 1px solid rgba(251,191,36,0.35);
+    background: rgba(251,191,36,0.06);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+  }
+  .lista-espera-item:hover { border-color: #fbbf24; }
+  .lista-espera-detalle {
+    display: none;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(251,191,36,0.25);
+    font-size: 12px;
+    color: #cbd5e1;
+  }
+  .lista-espera-detalle .fila { display: flex; justify-content: space-between; padding: 3px 0; }
 </style>
 </head>
 <body>
@@ -285,12 +409,45 @@
     <h1>💈 Panel de administración</h1>
     <div class="email" id="adminEmail"></div>
   </div>
-  <button class="btn-logout" id="btnLogout">Cerrar sesión</button>
+  <div style="display:flex; gap:8px;">
+    <button class="btn-logout" id="btnAjustes" title="Configuración">⚙️</button>
+    <button class="btn-logout" id="btnLogout">Cerrar sesión</button>
+  </div>
 </header>
 
 <div id="cargando" class="spinner-full">Verificando acceso...</div>
 
-<div class="container hidden" id="container">
+<!-- ===== VISTA PRINCIPAL: CALENDARIO ===== -->
+<div class="container hidden" id="vistaCalendario">
+  <div class="card">
+    <div class="cal-header">
+      <button class="cal-nav" id="calAdminMesAnterior">‹</button>
+      <div class="mes" id="calAdminMesTexto"></div>
+      <button class="cal-nav" id="calAdminMesSiguiente">›</button>
+    </div>
+    <div class="cal-grid" id="calGridAdmin"></div>
+    <div style="display:flex; gap:14px; margin-top:14px; font-size:11px; color:#64748b; flex-wrap:wrap;">
+      <div><span class="leyenda-punto" style="background:#3b82f6;"></span> Con citas</div>
+      <div>🕓 Lista de espera compatible</div>
+    </div>
+  </div>
+
+  <div class="card" id="cardDiaDetalle" style="display:none;">
+    <h2 id="tituloDiaDetalle"></h2>
+    <div id="listaCitasDia"></div>
+
+    <div id="bloqueListaEsperaCompatible" style="display:none; margin-top:18px; padding-top:16px; border-top:1px solid #334155;">
+      <h2 style="display:flex; align-items:center; gap:6px;">🕓 Lista de espera compatible</h2>
+      <div style="font-size:12px; color:#64748b; margin-bottom:12px;">Estas personas tienen una cita más tardía pero encajarían en huecos libres de este día.</div>
+      <div id="listaEsperaCompatibleLista"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== VISTA DE AJUSTES ===== -->
+<div class="container hidden" id="vistaAjustes">
+
+  <span class="paso-atras" id="volverACalendarioDesdeAjustes">← Volver al calendario</span>
 
   <div class="tabs">
     <div class="tab active" data-panel="servicios">Servicios</div>
@@ -443,6 +600,10 @@ const DIAS = [
   { key: "domingo", nombre: "Domingo" }
 ];
 
+const DIAS_SEMANA = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
+const MESES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+const DOW_CORTO = ["Lu","Ma","Mi","Ju","Vi","Sá","Do"];
+
 // ---------- Guardia de acceso: solo admins ----------
 auth.onAuthStateChanged(async (user) => {
   if (!user) {
@@ -458,15 +619,27 @@ auth.onAuthStateChanged(async (user) => {
   document.getElementById("adminEmail").textContent = user.email;
   document.getElementById("cargando").classList.add("hidden");
   document.getElementById("header").classList.remove("hidden");
-  document.getElementById("container").classList.remove("hidden");
+  document.getElementById("vistaCalendario").classList.remove("hidden");
   cargarServicios();
   cargarHorario();
   cargarExcepciones();
+  cargarHorarioCache();
+  cargarCitasYListaEspera();
 });
 
 document.getElementById("btnLogout").addEventListener("click", async () => {
   await auth.signOut();
   window.location.href = "index.html";
+});
+
+// ---------- Alternar entre calendario y ajustes ----------
+document.getElementById("btnAjustes").addEventListener("click", () => {
+  document.getElementById("vistaCalendario").classList.add("hidden");
+  document.getElementById("vistaAjustes").classList.remove("hidden");
+});
+document.getElementById("volverACalendarioDesdeAjustes").addEventListener("click", () => {
+  document.getElementById("vistaAjustes").classList.add("hidden");
+  document.getElementById("vistaCalendario").classList.remove("hidden");
 });
 
 // ---------- Tabs ----------
@@ -854,6 +1027,371 @@ function escapeHtml(str) {
   div.textContent = str == null ? "" : String(str);
   return div.innerHTML;
 }
+
+// =========================================================
+// CALENDARIO DEL PROFESIONAL
+// =========================================================
+let citasCache = {};
+let listaEsperaCache = {};
+let horarioCache = {};
+let mesVisibleAdmin = new Date();
+mesVisibleAdmin.setDate(1);
+let fechaSeleccionadaAdmin = null;
+
+function cargarHorarioCache() {
+  db.ref("horario").on("value", (snap) => {
+    horarioCache = snap.val() || {};
+    if (document.getElementById("vistaCalendario").classList.contains("hidden") === false) renderCalendarioAdmin();
+  });
+}
+
+function cargarCitasYListaEspera() {
+  db.ref("citas").on("value", (snap) => {
+    citasCache = snap.val() || {};
+    renderCalendarioAdmin();
+    if (fechaSeleccionadaAdmin) mostrarDetalleDia(fechaSeleccionadaAdmin);
+  });
+  db.ref("listaEspera").on("value", (snap) => {
+    listaEsperaCache = snap.val() || {};
+    renderCalendarioAdmin();
+    if (fechaSeleccionadaAdmin) mostrarDetalleDia(fechaSeleccionadaAdmin);
+  });
+}
+
+function hoyISO() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function horaAMin(hhmm) {
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + m;
+}
+function minAHora(min) {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
+}
+
+// ¿Qué excepción (si alguna) aplica a esta fecha? Prioridad: festivo/vacaciones > especial
+function excepcionParaFechaAdmin(fechaISO) {
+  let especial = null;
+  for (const id in excepcionesCache) {
+    const ex = excepcionesCache[id];
+    if (fechaISO >= ex.desde && fechaISO <= ex.hasta) {
+      if (ex.tipo === "festivo" || ex.tipo === "vacaciones") return ex;
+      if (ex.tipo === "especial") especial = ex;
+    }
+  }
+  return especial;
+}
+
+function franjasParaFechaAdmin(fechaISO) {
+  const ex = excepcionParaFechaAdmin(fechaISO);
+  if (ex) {
+    if (ex.tipo === "festivo" || ex.tipo === "vacaciones") return [];
+    if (ex.tipo === "especial") return [{ inicio: ex.inicio, fin: ex.fin }];
+  }
+  const diaKey = DIAS_SEMANA[new Date(fechaISO + "T00:00:00").getDay()];
+  const dia = horarioCache[diaKey];
+  if (!dia || !dia.activo) return [];
+  return dia.franjas || [];
+}
+
+// Citas confirmadas de un día concreto, ordenadas por hora
+function citasDelDia(fechaISO) {
+  return Object.keys(citasCache)
+    .filter(id => citasCache[id].fecha === fechaISO)
+    .map(id => ({ id, ...citasCache[id] }))
+    .sort((a, b) => a.inicio.localeCompare(b.inicio));
+}
+
+// Huecos libres de un día (en minutos), restando las citas ya confirmadas de esa franja horaria
+function huecosLibresDia(fechaISO) {
+  const franjas = franjasParaFechaAdmin(fechaISO).map(f => ({ inicio: horaAMin(f.inicio), fin: horaAMin(f.fin) }));
+  const ocupados = citasDelDia(fechaISO)
+    .filter(c => c.estado === "confirmada" || c.estado === "completada")
+    .map(c => ({ inicio: horaAMin(c.inicio), fin: horaAMin(c.fin) }))
+    .sort((a, b) => a.inicio - b.inicio);
+
+  let libres = [];
+  franjas.forEach(f => {
+    let cursor = f.inicio;
+    ocupados.filter(o => o.inicio < f.fin && o.fin > f.inicio).forEach(o => {
+      if (o.inicio > cursor) libres.push({ inicio: cursor, fin: Math.min(o.inicio, f.fin) });
+      cursor = Math.max(cursor, o.fin);
+    });
+    if (cursor < f.fin) libres.push({ inicio: cursor, fin: f.fin });
+  });
+  return libres.filter(l => l.fin > l.inicio);
+}
+
+// Solicitudes de lista de espera pendientes compatibles con huecos libres de este día
+// (el día tiene que ser ANTERIOR a la cita que ya tienen, para que tenga sentido "adelantarla")
+function listaEsperaCompatibleDia(fechaISO) {
+  const libres = huecosLibresDia(fechaISO);
+  if (libres.length === 0) return [];
+
+  const diaKey = DIAS_SEMANA[new Date(fechaISO + "T00:00:00").getDay()];
+
+  return Object.keys(listaEsperaCache)
+    .filter(id => listaEsperaCache[id].estado === "pendiente")
+    .map(id => ({ id, ...listaEsperaCache[id] }))
+    .filter(le => {
+      if (fechaISO >= le.fechaCitaActual) return false; // solo si es antes de su cita actual
+      if (le.preferenciaDias && !le.preferenciaDias.includes(diaKey)) return false;
+      return libres.some(l => {
+        const inicio = Math.max(l.inicio, le.preferenciaInicioMin);
+        const fin = Math.min(l.fin, le.preferenciaFinMin);
+        return (fin - inicio) >= le.duracion;
+      });
+    })
+    .sort((a, b) => a.creadaEn - b.creadaEn);
+}
+
+function primerHuecoCompatible(fechaISO, le) {
+  const libres = huecosLibresDia(fechaISO);
+  for (const l of libres) {
+    const inicio = Math.max(l.inicio, le.preferenciaInicioMin);
+    const fin = Math.min(l.fin, le.preferenciaFinMin);
+    if ((fin - inicio) >= le.duracion) return inicio;
+  }
+  return null;
+}
+
+// ---------- Render del calendario mensual ----------
+function renderCalendarioAdmin() {
+  document.getElementById("calAdminMesTexto").textContent = MESES[mesVisibleAdmin.getMonth()] + " " + mesVisibleAdmin.getFullYear();
+
+  const hoy = hoyISO();
+  const primerDiaSemana = (mesVisibleAdmin.getDay() + 6) % 7;
+  const diasEnMes = new Date(mesVisibleAdmin.getFullYear(), mesVisibleAdmin.getMonth() + 1, 0).getDate();
+
+  let html = DOW_CORTO.map(d => `<div class="cal-dow">${d}</div>`).join("");
+  for (let i = 0; i < primerDiaSemana; i++) html += `<div class="cal-day empty"></div>`;
+
+  for (let dia = 1; dia <= diasEnMes; dia++) {
+    const fechaISO = mesVisibleAdmin.getFullYear() + "-" + String(mesVisibleAdmin.getMonth() + 1).padStart(2, "0") + "-" + String(dia).padStart(2, "0");
+    const numCitas = citasDelDia(fechaISO).filter(c => c.estado === "confirmada" || c.estado === "completada").length;
+    const tieneEspera = fechaISO >= hoy && listaEsperaCompatibleDia(fechaISO).length > 0;
+    const esPasado = fechaISO < hoy;
+
+    const clases = ["cal-day"];
+    if (esPasado) clases.push("pasado");
+    if (fechaISO === hoy) clases.push("today");
+    if (fechaISO === fechaSeleccionadaAdmin) clases.push("selected");
+
+    html += `<div class="${clases.join(' ')}" data-fecha="${fechaISO}">
+      ${tieneEspera ? '<span class="icono-espera">🕓</span>' : ''}
+      <span>${dia}</span>
+      ${numCitas > 0 ? `<span class="cal-day-dots">${'<span class="punto-citas"></span>'.repeat(Math.min(numCitas, 3))}</span>` : ''}
+    </div>`;
+  }
+
+  document.getElementById("calGridAdmin").innerHTML = html;
+  document.getElementById("calAdminMesAnterior").disabled = (mesVisibleAdmin.getFullYear() === new Date().getFullYear() && mesVisibleAdmin.getMonth() === new Date().getMonth());
+
+  document.querySelectorAll("#calGridAdmin [data-fecha]").forEach(el => {
+    el.addEventListener("click", () => mostrarDetalleDia(el.dataset.fecha));
+  });
+}
+
+document.getElementById("calAdminMesAnterior").addEventListener("click", () => {
+  mesVisibleAdmin.setMonth(mesVisibleAdmin.getMonth() - 1);
+  renderCalendarioAdmin();
+});
+document.getElementById("calAdminMesSiguiente").addEventListener("click", () => {
+  mesVisibleAdmin.setMonth(mesVisibleAdmin.getMonth() + 1);
+  renderCalendarioAdmin();
+});
+
+// ---------- Detalle de un día: citas + lista de espera compatible ----------
+async function mostrarDetalleDia(fechaISO) {
+  fechaSeleccionadaAdmin = fechaISO;
+  renderCalendarioAdmin();
+
+  const card = document.getElementById("cardDiaDetalle");
+  card.style.display = "block";
+  const fechaFmt = new Date(fechaISO + "T00:00:00").toLocaleDateString("es-ES", { weekday: 'long', day: 'numeric', month: 'long' });
+  document.getElementById("tituloDiaDetalle").textContent = fechaFmt;
+
+  const citas = citasDelDia(fechaISO).filter(c => c.estado !== "cancelada");
+  const cont = document.getElementById("listaCitasDia");
+
+  if (citas.length === 0) {
+    cont.innerHTML = '<div class="empty">No hay citas este día</div>';
+  } else {
+    // Cargamos el nº de ausencias de cada cliente implicado, para el aviso junto a su nombre
+    const clientesUnicos = [...new Set(citas.map(c => c.clienteId))];
+    const perfiles = {};
+    await Promise.all(clientesUnicos.map(async uid => {
+      const snap = await db.ref("clientes/" + uid).get();
+      perfiles[uid] = snap.val() || {};
+    }));
+
+    const etiquetas = { confirmada: "Confirmada", completada: "Completada", cancelada: "Cancelada", noShow: "No asistió" };
+
+    cont.innerHTML = citas.map(c => {
+      const noShows = (perfiles[c.clienteId] && perfiles[c.clienteId].noShows) || 0;
+      const avisoNoShow = noShows > 0 ? `<span class="aviso-noshow-cliente">⚠️ ${noShows} ausencia${noShows > 1 ? 's' : ''} previa${noShows > 1 ? 's' : ''}</span>` : "";
+      let acciones = "";
+      if (c.estado === "confirmada") {
+        acciones = `
+          <div class="cita-dia-acciones">
+            <button class="btn-mini completar" data-completar="${c.id}">✓ Completada</button>
+            <button class="btn-mini noshow" data-noshow="${c.id}">✕ No presentado</button>
+            <button class="btn-mini" data-cancelaradmin="${c.id}">Cancelar</button>
+          </div>`;
+      } else {
+        acciones = `<span class="badge ${c.estado}" style="margin-top:8px; display:inline-block;">${etiquetas[c.estado] || c.estado}</span>`;
+      }
+      return `
+        <div class="cita-dia-item">
+          <div class="cita-dia-top">
+            <div>
+              <div class="cita-dia-hora">${c.inicio}</div>
+              <div class="cita-dia-cliente">${escapeHtml(c.clienteNombre)} · ${escapeHtml(c.clienteTelefono)}${avisoNoShow}</div>
+              <div class="cita-dia-servicio">${escapeHtml(c.servicioNombre)} · ${Number(c.precio).toFixed(2)} €</div>
+            </div>
+          </div>
+          ${acciones}
+        </div>`;
+    }).join("");
+
+    cont.querySelectorAll("[data-completar]").forEach(btn => {
+      btn.addEventListener("click", () => marcarEstadoCita(btn.dataset.completar, "completada"));
+    });
+    cont.querySelectorAll("[data-noshow]").forEach(btn => {
+      btn.addEventListener("click", () => marcarEstadoCita(btn.dataset.noshow, "noShow"));
+    });
+    cont.querySelectorAll("[data-cancelaradmin]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        if (confirm("¿Cancelar esta cita?")) marcarEstadoCita(btn.dataset.cancelaradmin, "cancelada");
+      });
+    });
+  }
+
+  // Lista de espera compatible con huecos libres de este día
+  const compatibles = listaEsperaCompatibleDia(fechaISO);
+  const bloque = document.getElementById("bloqueListaEsperaCompatible");
+  if (compatibles.length === 0) {
+    bloque.style.display = "none";
+  } else {
+    bloque.style.display = "block";
+    const listaCont = document.getElementById("listaEsperaCompatibleLista");
+    listaCont.innerHTML = compatibles.map(le => {
+      const fechaSolicitud = new Date(le.creadaEn).toLocaleDateString("es-ES", { day: 'numeric', month: 'short' });
+      const fechaCitaActualFmt = new Date(le.fechaCitaActual + "T00:00:00").toLocaleDateString("es-ES", { day: 'numeric', month: 'short' });
+      return `
+        <div class="lista-espera-item" data-le="${le.id}">
+          <div style="display:flex; justify-content:space-between;">
+            <strong style="font-size:13px;">${escapeHtml(le.clienteNombre)}</strong>
+            <span style="font-size:11px; color:#94a3b8;">Solicitado el ${fechaSolicitud}</span>
+          </div>
+          <div style="font-size:12px; color:#94a3b8; margin-top:2px;">${escapeHtml(le.servicioNombre)} · cita actual: ${fechaCitaActualFmt} a las ${le.horaCitaActual}</div>
+          <div class="lista-espera-detalle" id="detalleLe-${le.id}">
+            <div class="fila"><span>Teléfono</span><strong>${escapeHtml(le.clienteTelefono)}</strong></div>
+            <div class="fila"><span>Email</span><strong>${escapeHtml(le.clienteEmail)}</strong></div>
+            <button class="primary" style="margin-top:10px;" data-mover="${le.id}">Adelantar cita a este día</button>
+          </div>
+        </div>`;
+    }).join("");
+
+    listaCont.querySelectorAll("[data-le]").forEach(item => {
+      item.addEventListener("click", (e) => {
+        if (e.target.closest("[data-mover]")) return;
+        const detalle = document.getElementById("detalleLe-" + item.dataset.le);
+        detalle.style.display = detalle.style.display === "block" ? "none" : "block";
+      });
+    });
+    listaCont.querySelectorAll("[data-mover]").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        moverCitaDesdeListaEspera(btn.dataset.mover, fechaISO);
+      });
+    });
+  }
+}
+
+// ---------- Marcar completada / no-show / cancelar (admin) ----------
+async function marcarEstadoCita(citaId, nuevoEstado) {
+  const cita = citasCache[citaId];
+  if (!cita) return;
+
+  const updates = {};
+  updates["citas/" + citaId + "/estado"] = nuevoEstado;
+  updates["citasPorUsuario/" + cita.clienteId + "/" + citaId + "/estado"] = nuevoEstado;
+  updates["citasPublicas/" + citaId + "/estado"] = nuevoEstado;
+
+  // Si esta cita tenía una solicitud de lista de espera enlazada, la cancelamos (ya no aplica)
+  if (cita.listaEsperaId && nuevoEstado !== "confirmada") {
+    updates["listaEspera/" + cita.listaEsperaId + "/estado"] = "cancelada";
+    updates["listaEsperaPorUsuario/" + cita.clienteId + "/" + cita.listaEsperaId + "/estado"] = "cancelada";
+  }
+
+  await db.ref().update(updates);
+
+  // Contadores del cliente: completadas y ausencias
+  if (nuevoEstado === "completada") {
+    await db.ref("clientes/" + cita.clienteId + "/citasCompletadas").transaction(cur => (cur || 0) + 1);
+  } else if (nuevoEstado === "noShow") {
+    await db.ref("clientes/" + cita.clienteId + "/noShows").transaction(cur => (cur || 0) + 1);
+  }
+}
+
+// ---------- Mover una cita de lista de espera a un hueco libre de este día ----------
+async function moverCitaDesdeListaEspera(listaEsperaId, fechaISO) {
+  const le = listaEsperaCache[listaEsperaId];
+  if (!le) return;
+
+  const inicioMin = primerHuecoCompatible(fechaISO, le);
+  if (inicioMin == null) {
+    alert("Ese hueco ya no está disponible (puede que se acabe de ocupar). Recarga y prueba de nuevo.");
+    return;
+  }
+  const inicio = minAHora(inicioMin);
+  const fin = minAHora(inicioMin + le.duracion);
+
+  if (!confirm(`¿Mover la cita de ${le.clienteNombre} a ${fechaISO} a las ${inicio}? Se liberará su cita anterior del ${le.fechaCitaActual}.`)) return;
+
+  const nuevaId = db.ref("citas").push().key;
+  const citaAnterior = citasCache[le.citaId];
+
+  const datosNuevaCita = {
+    clienteId: le.clienteId,
+    clienteNombre: le.clienteNombre,
+    clienteTelefono: le.clienteTelefono,
+    servicioId: le.servicioId,
+    servicioNombre: le.servicioNombre,
+    duracion: le.duracion,
+    precio: citaAnterior ? citaAnterior.precio : 0,
+    fecha: fechaISO,
+    inicio: inicio,
+    fin: fin,
+    estado: "confirmada",
+    listaEsperaId: null,
+    creadaEn: Date.now()
+  };
+
+  const updates = {};
+  updates["citas/" + nuevaId] = datosNuevaCita;
+  updates["citasPorUsuario/" + le.clienteId + "/" + nuevaId] = datosNuevaCita;
+  updates["citasPublicas/" + nuevaId] = { fecha: fechaISO, inicio, fin, estado: "confirmada" };
+
+  // Liberamos la cita que tenía antes
+  if (le.citaId && citaAnterior) {
+    updates["citas/" + le.citaId + "/estado"] = "cancelada";
+    updates["citasPorUsuario/" + le.clienteId + "/" + le.citaId + "/estado"] = "cancelada";
+    updates["citasPublicas/" + le.citaId + "/estado"] = "cancelada";
+  }
+
+  // Cerramos la solicitud de lista de espera
+  updates["listaEspera/" + listaEsperaId + "/estado"] = "resuelta";
+  updates["listaEsperaPorUsuario/" + le.clienteId + "/" + listaEsperaId + "/estado"] = "resuelta";
+
+  await db.ref().update(updates);
+  alert("Cita movida correctamente. Recuerda avisar al cliente si aún no lo has hecho.");
+}
+
 </script>
 </body>
 </html>
