@@ -111,6 +111,15 @@
   }
   .btn-logout-inline:hover { color: #94a3b8; text-decoration: underline; }
 
+  .olvido-password {
+    text-align: center;
+    font-size: 12px;
+    color: #64748b;
+    cursor: pointer;
+    margin-top: 14px;
+  }
+  .olvido-password:hover { color: #94a3b8; text-decoration: underline; }
+
   .admin-link {
     text-align: center;
     margin-top: 18px;
@@ -172,24 +181,25 @@
     </div>
     <div class="field">
       <label for="loginPassword">Contraseña</label>
-      <input type="password" id="loginPassword" placeholder="••••••••" required autocomplete="current-password">
+      <input type="password" id="loginPassword" placeholder="Introduce tu contraseña" required autocomplete="current-password">
     </div>
     <button type="submit" class="submit" id="btnLogin">Entrar</button>
+    <div class="olvido-password" id="btnOlvidoPassword">¿Has olvidado tu contraseña?</div>
   </form>
 
   <!-- REGISTRO -->
   <form id="formRegistro" class="hidden">
     <div class="field">
       <label for="regNombre">Nombre completo</label>
-      <input type="text" id="regNombre" placeholder="María García" required autocomplete="name">
+      <input type="text" id="regNombre" placeholder="Ej: María García" required autocomplete="name">
     </div>
     <div class="field">
       <label for="regTelefono">Teléfono de contacto</label>
-      <input type="tel" id="regTelefono" placeholder="600123456" required autocomplete="tel">
+      <input type="tel" id="regTelefono" placeholder="Ej: 600123456" required autocomplete="tel">
     </div>
     <div class="field">
       <label for="regEmail">Correo electrónico (será tu usuario)</label>
-      <input type="email" id="regEmail" placeholder="maria@email.com" required autocomplete="email">
+      <input type="email" id="regEmail" placeholder="Ej: maria@email.com" required autocomplete="email">
     </div>
     <div class="field">
       <label for="regPassword">Contraseña</label>
@@ -226,6 +236,8 @@ const db = firebase.database();
 
 // Mantener sesión iniciada entre visitas (persistencia en el propio almacenamiento del navegador)
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+// Los correos automáticos de Firebase (recuperación de contraseña, etc.) se envían en español
+auth.languageCode = "es";
 
 const CLAVE_ULTIMO_EMAIL = "peluqueria_lastEmail";
 
@@ -290,6 +302,25 @@ adminLink.addEventListener("click", () => {
     adminLink.textContent = "Acceso profesional →";
   }
   mostrarMensaje("");
+});
+
+// ---------- Recuperar contraseña ----------
+document.getElementById("btnOlvidoPassword").addEventListener("click", async () => {
+  const emailField = document.getElementById("loginEmail");
+  let email = emailField.value.trim();
+
+  if (!email) {
+    email = prompt("Escribe el correo con el que te registraste para enviarte el enlace de recuperación:");
+    if (!email) return;
+    email = email.trim();
+  }
+
+  try {
+    await auth.sendPasswordResetEmail(email);
+    mostrarMensaje("Te hemos enviado un correo a " + email + " con un enlace para restablecer tu contraseña.", "success");
+  } catch (err) {
+    mostrarMensaje(traducirError(err.code), "error");
+  }
 });
 
 // ---------- Login ----------
