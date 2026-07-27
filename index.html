@@ -120,6 +120,45 @@
   }
   .olvido-password:hover { color: #94a3b8; text-decoration: underline; }
 
+  /* ---- Modal personalizado (sustituye al prompt nativo) ---- */
+  .modal-overlay-custom {
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .modal-caja-custom {
+    background: #273549;
+    border-radius: 16px;
+    padding: 22px;
+    width: 100%;
+    max-width: 360px;
+  }
+  .modal-mensaje-custom {
+    font-size: 14px;
+    color: #f1f5f9;
+    line-height: 1.5;
+    margin-bottom: 14px;
+  }
+  .modal-input-custom {
+    width: 100%;
+    padding: 11px 12px;
+    border-radius: 9px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #f1f5f9;
+    font-size: 14px;
+    outline: none;
+    margin-bottom: 16px;
+  }
+  .modal-input-custom:focus { border-color: #3b82f6; }
+  .modal-botones-custom { display: flex; gap: 8px; }
+  .modal-botones-custom button { margin-top: 0; flex: 1; }
+
   .admin-link {
     text-align: center;
     margin-top: 18px;
@@ -304,13 +343,38 @@ adminLink.addEventListener("click", () => {
   mostrarMensaje("");
 });
 
+// ---------- Modal personalizado tipo "prompt" (sustituye al prompt nativo) ----------
+function mostrarPrompt(mensaje, valorInicial) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay-custom";
+    overlay.innerHTML = `
+      <div class="modal-caja-custom">
+        <div class="modal-mensaje-custom">${mensaje}</div>
+        <input type="email" id="mpInput" class="modal-input-custom" placeholder="tu@email.com" value="${valorInicial || ''}">
+        <div class="modal-botones-custom">
+          <button class="submit" id="mpCancelar" style="background:transparent; border:1px solid #475569; color:#94a3b8;">Cancelar</button>
+          <button class="submit" id="mpOk">Enviar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const input = overlay.querySelector("#mpInput");
+    input.focus();
+    const cerrar = (valor) => { overlay.remove(); resolve(valor); };
+    overlay.querySelector("#mpCancelar").addEventListener("click", () => cerrar(null));
+    overlay.querySelector("#mpOk").addEventListener("click", () => cerrar(input.value.trim() || null));
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") cerrar(input.value.trim() || null); });
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) cerrar(null); });
+  });
+}
+
 // ---------- Recuperar contraseña ----------
 document.getElementById("btnOlvidoPassword").addEventListener("click", async () => {
   const emailField = document.getElementById("loginEmail");
   let email = emailField.value.trim();
 
   if (!email) {
-    email = prompt("Escribe el correo con el que te registraste para enviarte el enlace de recuperación:");
+    email = await mostrarPrompt("Escribe el correo con el que te registraste para enviarte el enlace de recuperación:");
     if (!email) return;
     email = email.trim();
   }
