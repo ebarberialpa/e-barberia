@@ -236,6 +236,34 @@
   }
   .modal-cerrar:hover { color: #f1f5f9; }
 
+  /* ---- Modales personalizados (confirm/alerta) ---- */
+  .modal-overlay-custom {
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .modal-caja-custom {
+    background: #273549;
+    border-radius: 16px;
+    padding: 22px;
+    width: 100%;
+    max-width: 360px;
+  }
+  .modal-mensaje-custom {
+    font-size: 14px;
+    color: #f1f5f9;
+    line-height: 1.5;
+    margin-bottom: 18px;
+    white-space: pre-line;
+  }
+  .modal-botones-custom { display: flex; gap: 8px; }
+  .modal-botones-custom button { margin-top: 0; }
+
   .slots-titulo { font-size: 13px; color: #94a3b8; margin: 18px 0 10px; }
   .slots-grid {
     display: grid;
@@ -622,6 +650,46 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// ---------- Modales personalizados (sustituyen a confirm/alert nativos) ----------
+function mostrarConfirm(mensaje, opciones) {
+  opciones = opciones || {};
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay-custom";
+    overlay.innerHTML = `
+      <div class="modal-caja-custom">
+        <div class="modal-mensaje-custom">${escapeHtml(mensaje)}</div>
+        <div class="modal-botones-custom">
+          <button class="secondary" id="mcCancelar">${escapeHtml(opciones.cancelText || "Cancelar")}</button>
+          <button class="primary" id="mcOk">${escapeHtml(opciones.okText || "Aceptar")}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const cerrar = (valor) => { overlay.remove(); resolve(valor); };
+    overlay.querySelector("#mcCancelar").addEventListener("click", () => cerrar(false));
+    overlay.querySelector("#mcOk").addEventListener("click", () => cerrar(true));
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) cerrar(false); });
+  });
+}
+
+function mostrarAlerta(mensaje) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay-custom";
+    overlay.innerHTML = `
+      <div class="modal-caja-custom">
+        <div class="modal-mensaje-custom">${escapeHtml(mensaje)}</div>
+        <div class="modal-botones-custom">
+          <button class="primary" id="maOk" style="width:100%;">Entendido</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const cerrar = () => { overlay.remove(); resolve(); };
+    overlay.querySelector("#maOk").addEventListener("click", cerrar);
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) cerrar(); });
+  });
+}
+
 function hoyISO() {
   const d = new Date();
   return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
@@ -717,14 +785,14 @@ function obtenerVentanaPreferencia() {
   return { inicio: 0, fin: 24 * 60, dias: null }; // indiferente
 }
 
-document.getElementById("btnContinuarPreferencia").addEventListener("click", () => {
+document.getElementById("btnContinuarPreferencia").addEventListener("click", async () => {
   const ventana = obtenerVentanaPreferencia();
   if (ventana.fin <= ventana.inicio) {
-    alert('La hora "hasta" debe ser posterior a la hora "desde".');
+    await mostrarAlerta('La hora "hasta" debe ser posterior a la hora "desde".');
     return;
   }
   if (ventana.dias && ventana.dias.length === 0) {
-    alert("Marca al menos un día en el que te venga bien.");
+    await mostrarAlerta("Marca al menos un día en el que te venga bien.");
     return;
   }
   irAPasoCalendario();
@@ -1106,7 +1174,7 @@ function renderListaCitas(contId, ids, datos, listaEsperaDatos, permitirCancelar
 
   cont.querySelectorAll("[data-cancelar]").forEach(btn => {
     btn.addEventListener("click", async () => {
-      if (confirm("¿Seguro que quieres cancelar esta cita?")) {
+      if (await mostrarConfirm("¿Seguro que quieres cancelar esta cita?")) {
         const id = btn.dataset.cancelar;
         const cita = datos[id];
         const updates = {};
