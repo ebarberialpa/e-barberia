@@ -168,14 +168,42 @@
   .pref-opcion input { accent-color: #3b82f6; }
 
   .marco-personalizado {
-    margin-top: 14px;
+    display: block;
+    margin-top: 8px;
     padding: 14px;
     border: 1px solid #334155;
     border-radius: 10px;
     background: #1e293b;
+    cursor: pointer;
     transition: border-color 0.2s;
   }
-  .marco-personalizado.resaltado { border-color: #3b82f6; }
+  .marco-personalizado:has(#radioPersonalizada:checked),
+  .marco-personalizado.resaltado { border-color: #3b82f6; background: rgba(59,130,246,0.06); }
+  .marco-personalizado-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #e2e8f0;
+    margin-bottom: 12px;
+  }
+  .marco-personalizado-header input { accent-color: #3b82f6; margin: 0; }
+  .desde-hasta-linea {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .desde-hasta-linea input {
+    flex: 1;
+    min-width: 0;
+    padding: 11px 10px;
+    border-radius: 9px;
+    border: 1px solid #334155;
+    background: #273549;
+    color: #f1f5f9;
+    font-size: 14px;
+  }
+  .desde-hasta-linea span { color: #64748b; font-size: 13px; flex-shrink: 0; }
   .dias-semana-selector {
     display: flex;
     gap: 6px;
@@ -433,25 +461,19 @@
             <input type="radio" name="preferencia" value="tarde">
             <span>Tarde</span>
           </label>
-          <label class="pref-opcion" id="pref-opcion-personalizada">
-            <input type="radio" name="preferencia" value="personalizada">
-            <span>Horario concreto</span>
-          </label>
         </div>
 
-        <div class="marco-personalizado" id="marcoPersonalizado">
-          <div class="row-2">
-            <div class="field">
-              <label for="prefDesde">Desde</label>
-              <input type="time" id="prefDesde" value="16:00">
-            </div>
-            <div class="field">
-              <label for="prefHasta">Hasta</label>
-              <input type="time" id="prefHasta" value="17:00">
-            </div>
+        <label class="marco-personalizado" id="marcoPersonalizado">
+          <div class="marco-personalizado-header">
+            <input type="radio" name="preferencia" value="personalizada" id="radioPersonalizada">
+            <span>Horario concreto</span>
           </div>
-          <label style="display:block; font-size:12px; color:#94a3b8; margin:14px 0 8px;">Días que te vienen bien</label>
-          <div class="dias-semana-selector" id="diasSemanaSelector">
+          <div class="desde-hasta-linea">
+            <input type="time" id="prefDesde" value="16:00">
+            <span>–</span>
+            <input type="time" id="prefHasta" value="17:00">
+          </div>
+          <div class="dias-semana-selector" id="diasSemanaSelector" style="margin-top:12px;">
             <label class="dia-pill"><input type="checkbox" class="pref-dia" value="lunes" checked><span>L</span></label>
             <label class="dia-pill"><input type="checkbox" class="pref-dia" value="martes" checked><span>M</span></label>
             <label class="dia-pill"><input type="checkbox" class="pref-dia" value="miercoles" checked><span>X</span></label>
@@ -459,8 +481,7 @@
             <label class="dia-pill"><input type="checkbox" class="pref-dia" value="viernes" checked><span>V</span></label>
             <label class="dia-pill"><input type="checkbox" class="pref-dia" value="sabado" checked><span>S</span></label>
           </div>
-          <div style="font-size:11px; color:#64748b; margin-top:8px;">Esta franja y estos días solo se aplican si eliges "Horario concreto" arriba.</div>
-        </div>
+        </label>
 
         <button class="primary" id="btnContinuarPreferencia" style="margin-top:18px;">Ver calendario</button>
       </div>
@@ -609,6 +630,7 @@ auth.onAuthStateChanged(async (user) => {
   excepciones = snapExcepciones.val() || {};
   horasCancelacion = snapCancelacion.val() != null ? snapCancelacion.val() : 24;
 
+  aplicarLimitesHorarioReal();
   mostrarAvisoNoShows();
   renderServicios();
   cargarMisCitas();
@@ -770,6 +792,35 @@ document.querySelectorAll('input[name="preferencia"]').forEach(radio => {
     document.getElementById("marcoPersonalizado").classList.toggle("resaltado", radio.value === "personalizada");
   });
 });
+
+// Tocar cualquier control del marco (horas o días) selecciona automáticamente "Horario concreto"
+["prefDesde", "prefHasta"].forEach(id => {
+  document.getElementById(id).addEventListener("focus", () => { document.getElementById("radioPersonalizada").checked = true; });
+});
+document.querySelectorAll(".pref-dia").forEach(chk => {
+  chk.addEventListener("change", () => { document.getElementById("radioPersonalizada").checked = true; });
+});
+
+// Limita las horas seleccionables de "Horario concreto" al rango real en el que se dan servicios
+function aplicarLimitesHorarioReal() {
+  let minIni = null, maxFin = null;
+  Object.values(horario).forEach(dia => {
+    if (!dia || !dia.activo) return;
+    (dia.franjas || []).forEach(f => {
+      if (minIni === null || f.inicio < minIni) minIni = f.inicio;
+      if (maxFin === null || f.fin > maxFin) maxFin = f.fin;
+    });
+  });
+  const min = minIni || "00:00";
+  const max = maxFin || "23:59";
+  ["prefDesde", "prefHasta"].forEach(id => {
+    const input = document.getElementById(id);
+    input.min = min;
+    input.max = max;
+    if (input.value < min) input.value = min;
+    if (input.value > max) input.value = max;
+  });
+}
 
 // Ventana horaria (en minutos) y días de la semana permitidos según la preferencia elegida
 function obtenerVentanaPreferencia() {
