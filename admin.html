@@ -1,5 +1,4 @@
-
-   <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -27,11 +26,11 @@
     z-index: 10;
   }
   header h1 {
-    font-size: 17px;
+    font-size: 15px;
     color: #f1f5f9;
   }
   header .email {
-    font-size: 12px;
+    font-size: 11px;
     color: #64748b;
   }
   .btn-logout {
@@ -44,6 +43,25 @@
     cursor: pointer;
   }
   .btn-logout:hover { border-color: #f87171; color: #f87171; }
+
+  .btn-icono {
+    background: transparent;
+    border: 1px solid #475569;
+    color: #94a3b8;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-icono:hover { border-color: #3b82f6; color: #3b82f6; }
+  .btn-icono#btnLogout:hover { border-color: #f87171; color: #f87171; }
+  .btn-icono#btnCitaRapida { font-size: 20px; font-weight: 300; }
 
   .container {
     max-width: 640px;
@@ -548,19 +566,132 @@
   }
   .modal-monto-opciones label:has(input:checked) { border-color: #4ade80; background: rgba(74,222,128,0.08); color: #4ade80; font-weight: 600; }
   .modal-monto-opciones input { display: none; }
+
+  /* ---- Modal de cita manual: preferencia horaria y búsqueda ---- */
+  .paso-mini-titulo {
+    font-size: 12px;
+    color: #94a3b8;
+    margin: 4px 0 10px;
+  }
+  .pref-opciones {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .pref-opcion {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 11px 6px;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #e2e8f0;
+  }
+  .pref-opcion:has(input:checked) { border-color: #3b82f6; background: rgba(59,130,246,0.08); }
+  .pref-opcion input { accent-color: #3b82f6; margin: 0; }
+
+  .marco-personalizado {
+    display: block;
+    padding: 14px;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    background: #1e293b;
+    cursor: pointer;
+  }
+  .marco-personalizado:has(input[type="radio"]:checked) { border-color: #3b82f6; background: rgba(59,130,246,0.06); }
+  .marco-personalizado-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #e2e8f0;
+    margin-bottom: 12px;
+  }
+  .marco-personalizado-header input { accent-color: #3b82f6; margin: 0; }
+  .desde-hasta-linea { display: flex; align-items: center; gap: 8px; }
+  .desde-hasta-linea input {
+    flex: 1;
+    min-width: 0;
+    padding: 10px;
+    border-radius: 9px;
+    border: 1px solid #334155;
+    background: #273549;
+    color: #f1f5f9;
+    font-size: 14px;
+  }
+  .desde-hasta-linea span { color: #64748b; flex-shrink: 0; }
+  .dias-semana-selector { display: flex; gap: 6px; }
+  .dia-pill {
+    flex: 1;
+    text-align: center;
+    padding: 8px 0;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    cursor: pointer;
+    font-size: 12px;
+    color: #94a3b8;
+    user-select: none;
+  }
+  .dia-pill input { display: none; }
+  .dia-pill:has(input:checked) { background: #3b82f6; border-color: #3b82f6; color: #fff; font-weight: 600; }
+
+  .mcm-resultado-caja {
+    text-align: center;
+    padding: 24px 12px;
+    background: #1e293b;
+    border-radius: 10px;
+    font-size: 15px;
+    color: #f1f5f9;
+    line-height: 1.6;
+  }
+  .mcm-resultado-caja strong { color: #4ade80; font-size: 18px; }
+
+  .servicio-opcion-mcm {
+    padding: 12px 14px;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+  }
+  .servicio-opcion-mcm:hover { border-color: #3b82f6; }
+  .servicio-opcion-mcm .precio { color: #4ade80; font-weight: 600; }
+
+  .modal-cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .modal-cabecera > div { font-size: 15px; font-weight: 600; color: #f1f5f9; }
+  .modal-cerrar {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .modal-cerrar:hover { color: #f1f5f9; }
 </style>
 </head>
 <body>
 
 <header id="header" class="hidden">
   <div>
-    <h1>💈 Panel de administración</h1>
+    <h1>💈 Admin</h1>
     <div class="email" id="adminEmail"></div>
   </div>
   <div style="display:flex; gap:8px;">
-    <button class="btn-logout" id="btnCitaRapida" title="Añadir cita">+ Cita</button>
-    <button class="btn-logout" id="btnAjustes" title="Configuración">⚙️</button>
-    <button class="btn-logout" id="btnLogout">Cerrar sesión</button>
+    <button class="btn-icono" id="btnCitaRapida" title="Añadir cita">+</button>
+    <button class="btn-icono" id="btnAjustes" title="Configuración">⚙️</button>
+    <button class="btn-icono" id="btnLogout" title="Cerrar sesión">🚪</button>
   </div>
 </header>
 
@@ -594,33 +725,6 @@
     </div>
 
     <div class="resumen-ingresos" id="resumenIngresosDia"></div>
-
-    <button class="btn-cita-manual" id="btnAbrirCitaManual">+ Añadir cita manual (cliente que llama por teléfono)</button>
-
-    <div class="form-cita-manual hidden" id="formCitaManual">
-      <div class="field">
-        <label for="manualTelefono">Teléfono</label>
-        <input type="tel" id="manualTelefono" placeholder="Ej: 600123456">
-        <div class="nota-coincidencia" id="notaCoincidenciaTelefono"></div>
-      </div>
-      <div class="field">
-        <label for="manualNombre">Nombre</label>
-        <input type="text" id="manualNombre" placeholder="Ej: María García">
-        <div class="nota-coincidencia" id="notaCoincidenciaNombre"></div>
-      </div>
-      <div class="field">
-        <label for="manualServicio">Servicio</label>
-        <select id="manualServicio"></select>
-      </div>
-      <div class="field">
-        <label>Hora</label>
-        <div class="slots-grid" id="manualSlotsGrid"></div>
-        <div class="empty hidden" id="manualSinHuecos" style="padding:10px 0;">No quedan huecos libres este día.</div>
-      </div>
-      <button class="primary" id="btnGuardarCitaManual" disabled>Añadir cita</button>
-      <button class="secondary" id="btnCancelarCitaManual">Cancelar</button>
-      <div class="msg" id="msgCitaManual"></div>
-    </div>
 
     <div id="listaCitasDia"></div>
 
@@ -746,6 +850,83 @@
     </div>
   </div>
 
+</div>
+
+<!-- ===== MODAL: NUEVA CITA MANUAL ===== -->
+<div class="modal-overlay-custom hidden" id="modalCitaManual">
+  <div class="modal-caja-custom" style="max-width:420px; max-height:88vh; overflow-y:auto;">
+    <div class="modal-cabecera">
+      <div>Nueva cita manual</div>
+      <button class="modal-cerrar" id="cerrarModalCitaManual">✕</button>
+    </div>
+
+    <!-- Paso 1: servicio -->
+    <div id="mcmPasoServicio">
+      <div class="paso-mini-titulo">1. Elige el servicio</div>
+      <div id="mcmListaServicios"></div>
+    </div>
+
+    <!-- Paso 2: franja preferida -->
+    <div id="mcmPasoFranja" class="hidden">
+      <span class="paso-atras" id="mcmVolverServicio">← Cambiar servicio</span>
+      <div class="paso-mini-titulo">2. ¿Qué hora prefiere?</div>
+      <div class="pref-opciones">
+        <label class="pref-opcion"><input type="radio" name="mcmPreferencia" value="indiferente" checked><span>Indiferente</span></label>
+        <label class="pref-opcion"><input type="radio" name="mcmPreferencia" value="manana"><span>Mañana</span></label>
+        <label class="pref-opcion"><input type="radio" name="mcmPreferencia" value="tarde"><span>Tarde</span></label>
+      </div>
+      <label class="marco-personalizado" id="mcmMarcoPersonalizado">
+        <div class="marco-personalizado-header">
+          <input type="radio" name="mcmPreferencia" value="personalizada" id="mcmRadioPersonalizada">
+          <span>Horario concreto</span>
+        </div>
+        <div class="desde-hasta-linea">
+          <input type="time" id="mcmDesde" value="16:00">
+          <span>–</span>
+          <input type="time" id="mcmHasta" value="17:00">
+        </div>
+        <div class="dias-semana-selector" id="mcmDiasSemana" style="margin-top:12px;">
+          <label class="dia-pill"><input type="checkbox" class="mcm-pref-dia" value="lunes" checked><span>L</span></label>
+          <label class="dia-pill"><input type="checkbox" class="mcm-pref-dia" value="martes" checked><span>M</span></label>
+          <label class="dia-pill"><input type="checkbox" class="mcm-pref-dia" value="miercoles" checked><span>X</span></label>
+          <label class="dia-pill"><input type="checkbox" class="mcm-pref-dia" value="jueves" checked><span>J</span></label>
+          <label class="dia-pill"><input type="checkbox" class="mcm-pref-dia" value="viernes" checked><span>V</span></label>
+          <label class="dia-pill"><input type="checkbox" class="mcm-pref-dia" value="sabado" checked><span>S</span></label>
+        </div>
+      </label>
+      <button class="primary" id="mcmBtnBuscar" style="margin-top:16px;">Buscar primer hueco</button>
+      <div class="msg" id="mcmMsgFranja"></div>
+    </div>
+
+    <!-- Paso 3: resultado de la búsqueda -->
+    <div id="mcmPasoResultado" class="hidden">
+      <span class="paso-atras" id="mcmVolverFranja">← Cambiar preferencia</span>
+      <div class="paso-mini-titulo">3. Primer hueco encontrado</div>
+      <div id="mcmResultadoTexto" class="mcm-resultado-caja"></div>
+      <div style="display:flex; gap:8px; margin-top:14px;">
+        <button class="secondary" id="mcmBtnSiguiente" style="margin-top:0;">Buscar siguiente</button>
+        <button class="primary" id="mcmBtnElegir" style="margin-top:0;">Elegir esta hora</button>
+      </div>
+    </div>
+
+    <!-- Paso 4: datos personales -->
+    <div id="mcmPasoDatos" class="hidden">
+      <span class="paso-atras" id="mcmVolverResultado">← Cambiar hora</span>
+      <div class="paso-mini-titulo">4. Datos de contacto</div>
+      <div class="field">
+        <label for="mcmTelefono">Teléfono</label>
+        <input type="tel" id="mcmTelefono" placeholder="Ej: 600123456">
+        <div class="nota-coincidencia" id="mcmNotaTelefono"></div>
+      </div>
+      <div class="field">
+        <label for="mcmNombre">Nombre</label>
+        <input type="text" id="mcmNombre" placeholder="Ej: María García">
+        <div class="nota-coincidencia" id="mcmNotaNombre"></div>
+      </div>
+      <button class="primary" id="mcmBtnConfirmar">Añadir cita</button>
+      <div class="msg" id="mcmMsgDatos"></div>
+    </div>
+  </div>
 </div>
 
 <!-- Firebase SDK -->
@@ -1504,12 +1685,6 @@ document.getElementById("diaSiguiente").addEventListener("click", () => {
   mostrarDetalleDia(nuevaFecha);
 });
 
-// ---------- Botón "+ Cita" de la cabecera: acceso rápido a cita manual en el día de hoy ----------
-document.getElementById("btnCitaRapida").addEventListener("click", () => {
-  abrirVistaDia(hoyISO());
-  setTimeout(() => document.getElementById("btnAbrirCitaManual").click(), 50);
-});
-
 // ---------- Detalle de un día: citas + lista de espera compatible ----------
 async function mostrarDetalleDia(fechaISO) {
   fechaSeleccionadaAdmin = fechaISO;
@@ -1518,8 +1693,6 @@ async function mostrarDetalleDia(fechaISO) {
 
   const fechaFmt = new Date(fechaISO + "T00:00:00").toLocaleDateString("es-ES", { weekday: 'long', day: 'numeric', month: 'long' });
   document.getElementById("tituloDiaDetalle").textContent = fechaFmt;
-  document.getElementById("btnAbrirCitaManual").dataset.fecha = fechaISO;
-  ocultarFormCitaManual();
 
   const citas = citasDelDia(fechaISO).filter(c => c.estado !== "cancelada");
   const cont = document.getElementById("listaCitasDia");
@@ -1755,164 +1928,248 @@ async function moverCitaDesdeListaEspera(listaEsperaId, fechaISO) {
 }
 
 // =========================================================
-// CITAS MANUALES (cliente que llama por teléfono)
+// MODAL: NUEVA CITA MANUAL (servicio → franja → primer hueco → datos)
 // =========================================================
-let clienteVinculadoManual = null; // { uid, nombre, telefono, email } si coincide con un cliente dado de alta
-let manualHoraSeleccionada = null;
-
-function ocultarFormCitaManual() {
-  document.getElementById("formCitaManual").classList.add("hidden");
-  document.getElementById("btnAbrirCitaManual").classList.remove("hidden");
-}
-
-document.getElementById("btnAbrirCitaManual").addEventListener("click", () => {
-  document.getElementById("formCitaManual").classList.remove("hidden");
-  document.getElementById("btnAbrirCitaManual").classList.add("hidden");
-
-  clienteVinculadoManual = null;
-  manualHoraSeleccionada = null;
-  document.getElementById("manualTelefono").value = "";
-  document.getElementById("manualNombre").value = "";
-  document.getElementById("notaCoincidenciaTelefono").textContent = "";
-  document.getElementById("notaCoincidenciaNombre").textContent = "";
-  document.getElementById("msgCitaManual").textContent = "";
-  document.getElementById("btnGuardarCitaManual").disabled = true;
-
-  // Rellenamos el selector de servicios activos
-  const sel = document.getElementById("manualServicio");
-  const idsServicios = Object.keys(serviciosCache).filter(id => serviciosCache[id].activo !== false);
-  sel.innerHTML = idsServicios.map(id =>
-    `<option value="${id}">${escapeHtml(serviciosCache[id].nombre)} (${serviciosCache[id].duracion} min)</option>`
-  ).join("");
-
-  renderHuecosManual();
-});
-
-// Recalcula y pinta los huecos libres del día según la duración del servicio elegido
-function renderHuecosManual() {
-  manualHoraSeleccionada = null;
-  document.getElementById("btnGuardarCitaManual").disabled = true;
-
-  const fechaISO = document.getElementById("btnAbrirCitaManual").dataset.fecha;
-  const servicioId = document.getElementById("manualServicio").value;
-  const servicio = serviciosCache[servicioId];
-  const grid = document.getElementById("manualSlotsGrid");
-  const sinHuecos = document.getElementById("manualSinHuecos");
-
-  if (!servicio || !fechaISO) { grid.innerHTML = ""; return; }
-
-  const libres = huecosLibresDia(fechaISO);
-  const slots = [];
-  libres.forEach(l => {
-    for (let t = l.inicio; t + servicio.duracion <= l.fin; t += servicio.duracion) {
-      slots.push(t);
-    }
-  });
-
-  if (slots.length === 0) {
-    grid.innerHTML = "";
-    sinHuecos.classList.remove("hidden");
-    return;
-  }
-  sinHuecos.classList.add("hidden");
-  grid.innerHTML = slots.map(t => `<div class="slot-btn" data-min="${t}">${minAHora(t)}</div>`).join("");
-
-  grid.querySelectorAll("[data-min]").forEach(el => {
-    el.addEventListener("click", () => {
-      grid.querySelectorAll(".slot-btn").forEach(s => s.classList.remove("selected"));
-      el.classList.add("selected");
-      manualHoraSeleccionada = minAHora(parseInt(el.dataset.min, 10));
-      document.getElementById("btnGuardarCitaManual").disabled = false;
-    });
-  });
-}
-
-document.getElementById("manualServicio").addEventListener("change", renderHuecosManual);
-
-
-document.getElementById("btnCancelarCitaManual").addEventListener("click", ocultarFormCitaManual);
+let mcmServicioElegido = null;
+let mcmResultadoActual = null; // { fecha, inicioMin }
+let mcmClienteVinculado = null; // { uid, nombre, telefono } si coincide con un cliente dado de alta
 
 function limpiarTelefono(tel) {
   return (tel || "").replace(/\s|\+|-/g, "");
 }
 
-// Búsqueda de coincidencia por teléfono (con pequeño debounce para no lanzar una consulta por cada tecla)
-let debounceTelefono = null;
-document.getElementById("manualTelefono").addEventListener("input", (e) => {
-  clearTimeout(debounceTelefono);
-  const valor = limpiarTelefono(e.target.value);
-  clienteVinculadoManual = null;
-  document.getElementById("notaCoincidenciaTelefono").className = "nota-coincidencia";
-  document.getElementById("notaCoincidenciaTelefono").textContent = "";
+function mcmMostrarPaso(paso) {
+  ["mcmPasoServicio", "mcmPasoFranja", "mcmPasoResultado", "mcmPasoDatos"].forEach(id => {
+    document.getElementById(id).classList.toggle("hidden", id !== paso);
+  });
+}
 
+function abrirModalCitaManual() {
+  mcmServicioElegido = null;
+  mcmResultadoActual = null;
+  mcmClienteVinculado = null;
+  document.getElementById("modalCitaManual").classList.remove("hidden");
+  mcmMostrarPaso("mcmPasoServicio");
+
+  const cont = document.getElementById("mcmListaServicios");
+  const ids = Object.keys(serviciosCache).filter(id => serviciosCache[id].activo !== false);
+  if (ids.length === 0) {
+    cont.innerHTML = '<div class="empty">No hay servicios activos. Crea uno primero en Configuración.</div>';
+    return;
+  }
+  cont.innerHTML = ids.map(id => {
+    const s = serviciosCache[id];
+    return `<div class="servicio-opcion-mcm" data-servicio="${id}">
+      <div>${escapeHtml(s.nombre)}<br><span style="font-size:11px;color:#94a3b8;">${s.duracion} min</span></div>
+      <div class="precio">${Number(s.precio).toFixed(2)} €</div>
+    </div>`;
+  }).join("");
+  cont.querySelectorAll("[data-servicio]").forEach(el => {
+    el.addEventListener("click", () => {
+      mcmServicioElegido = { id: el.dataset.servicio, ...serviciosCache[el.dataset.servicio] };
+      mcmAbrirPasoFranja();
+    });
+  });
+}
+
+document.getElementById("btnCitaRapida").addEventListener("click", abrirModalCitaManual);
+document.getElementById("cerrarModalCitaManual").addEventListener("click", () => {
+  document.getElementById("modalCitaManual").classList.add("hidden");
+});
+document.getElementById("mcmVolverServicio").addEventListener("click", () => mcmMostrarPaso("mcmPasoServicio"));
+document.getElementById("mcmVolverFranja").addEventListener("click", () => mcmMostrarPaso("mcmPasoFranja"));
+document.getElementById("mcmVolverResultado").addEventListener("click", () => mcmMostrarPaso("mcmPasoResultado"));
+
+// ---------- Paso 2: franja preferida ----------
+function mcmAbrirPasoFranja() {
+  mcmMostrarPaso("mcmPasoFranja");
+  document.getElementById("mcmMsgFranja").textContent = "";
+  let minIni = null, maxFin = null;
+  Object.values(horarioCache).forEach(dia => {
+    if (!dia || !dia.activo) return;
+    (dia.franjas || []).forEach(f => {
+      if (minIni === null || f.inicio < minIni) minIni = f.inicio;
+      if (maxFin === null || f.fin > maxFin) maxFin = f.fin;
+    });
+  });
+  const min = minIni || "00:00", max = maxFin || "23:59";
+  ["mcmDesde", "mcmHasta"].forEach(id => {
+    const input = document.getElementById(id);
+    input.min = min; input.max = max;
+    if (input.value < min) input.value = min;
+    if (input.value > max) input.value = max;
+  });
+}
+
+["mcmDesde", "mcmHasta"].forEach(id => {
+  document.getElementById(id).addEventListener("focus", () => { document.getElementById("mcmRadioPersonalizada").checked = true; });
+});
+document.querySelectorAll(".mcm-pref-dia").forEach(chk => {
+  chk.addEventListener("change", () => { document.getElementById("mcmRadioPersonalizada").checked = true; });
+});
+
+function mcmObtenerVentana() {
+  const tipo = document.querySelector('input[name="mcmPreferencia"]:checked').value;
+  if (tipo === "manana") return { inicio: 0, fin: horaAMin("14:00"), dias: null };
+  if (tipo === "tarde") return { inicio: horaAMin("14:00"), fin: 24 * 60, dias: null };
+  if (tipo === "personalizada") {
+    const desde = document.getElementById("mcmDesde").value || "00:00";
+    const hasta = document.getElementById("mcmHasta").value || "23:59";
+    const dias = Array.from(document.querySelectorAll(".mcm-pref-dia:checked")).map(el => el.value);
+    return { inicio: horaAMin(desde), fin: horaAMin(hasta), dias };
+  }
+  return { inicio: 0, fin: 24 * 60, dias: null };
+}
+
+function mcmPrimerHuecoDelDia(fechaISO, ventana, duracion) {
+  const diaKey = DIAS_SEMANA[new Date(fechaISO + "T00:00:00").getDay()];
+  if (ventana.dias && !ventana.dias.includes(diaKey)) return null;
+  const libres = huecosLibresDia(fechaISO);
+  const floor = fechaISO === hoyISO() ? horaActualMin() : 0;
+  for (const l of libres) {
+    const inicio = Math.max(l.inicio, ventana.inicio, floor);
+    const fin = Math.min(l.fin, ventana.fin);
+    if (fin - inicio >= duracion) return inicio;
+  }
+  return null;
+}
+
+function horaActualMin() {
+  const d = new Date();
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+function mcmBuscarDesde(fechaInicioISO, ventana, duracion, maxDias) {
+  let fecha = fechaInicioISO;
+  for (let i = 0; i < (maxDias || 180); i++) {
+    const inicioMin = mcmPrimerHuecoDelDia(fecha, ventana, duracion);
+    if (inicioMin != null) return { fecha, inicioMin };
+    fecha = sumarDias(fecha, 1);
+  }
+  return null;
+}
+
+document.getElementById("mcmBtnBuscar").addEventListener("click", () => {
+  const ventana = mcmObtenerVentana();
+  const msg = document.getElementById("mcmMsgFranja");
+  if (ventana.fin <= ventana.inicio) {
+    msg.className = "msg error";
+    msg.textContent = 'La hora "hasta" debe ser posterior a la hora "desde".';
+    return;
+  }
+  if (ventana.dias && ventana.dias.length === 0) {
+    msg.className = "msg error";
+    msg.textContent = "Marca al menos un día.";
+    return;
+  }
+  msg.textContent = "";
+  const resultado = mcmBuscarDesde(hoyISO(), ventana, mcmServicioElegido.duracion);
+  mcmMostrarResultado(resultado, ventana);
+});
+
+function mcmMostrarResultado(resultado, ventana) {
+  mcmResultadoActual = resultado ? { ...resultado, ventana } : null;
+  mcmMostrarPaso("mcmPasoResultado");
+  const cont = document.getElementById("mcmResultadoTexto");
+  const btnElegir = document.getElementById("mcmBtnElegir");
+
+  if (!resultado) {
+    cont.innerHTML = "No se ha encontrado ningún hueco compatible en los próximos meses.";
+    btnElegir.disabled = true;
+    return;
+  }
+  btnElegir.disabled = false;
+  const fechaFmt = new Date(resultado.fecha + "T00:00:00").toLocaleDateString("es-ES", { weekday: 'long', day: 'numeric', month: 'long' });
+  cont.innerHTML = `${escapeHtml(mcmServicioElegido.nombre)}<br><strong>${fechaFmt}</strong><br>a las <strong>${minAHora(resultado.inicioMin)}</strong>`;
+}
+
+document.getElementById("mcmBtnSiguiente").addEventListener("click", () => {
+  if (!mcmResultadoActual) return;
+  const siguienteFecha = sumarDias(mcmResultadoActual.fecha, 1);
+  const resultado = mcmBuscarDesde(siguienteFecha, mcmResultadoActual.ventana, mcmServicioElegido.duracion);
+  mcmMostrarResultado(resultado, mcmResultadoActual.ventana);
+});
+
+document.getElementById("mcmBtnElegir").addEventListener("click", () => {
+  if (!mcmResultadoActual) return;
+  mcmMostrarPaso("mcmPasoDatos");
+  mcmClienteVinculado = null;
+  document.getElementById("mcmTelefono").value = "";
+  document.getElementById("mcmNombre").value = "";
+  document.getElementById("mcmNotaTelefono").textContent = "";
+  document.getElementById("mcmNotaNombre").textContent = "";
+  document.getElementById("mcmMsgDatos").textContent = "";
+});
+
+let mcmDebounceTelefono = null;
+document.getElementById("mcmTelefono").addEventListener("input", (e) => {
+  clearTimeout(mcmDebounceTelefono);
+  const valor = limpiarTelefono(e.target.value);
+  mcmClienteVinculado = null;
+  document.getElementById("mcmNotaTelefono").className = "nota-coincidencia";
+  document.getElementById("mcmNotaTelefono").textContent = "";
   if (valor.length < 9) return;
-  debounceTelefono = setTimeout(async () => {
+  mcmDebounceTelefono = setTimeout(async () => {
     const snap = await db.ref("clientes").orderByChild("telefono").equalTo(valor).get();
     const datos = snap.val();
     if (datos) {
       const uid = Object.keys(datos)[0];
       const c = datos[uid];
-      clienteVinculadoManual = { uid, nombre: c.nombre, telefono: c.telefono, email: c.email };
-      document.getElementById("manualNombre").value = c.nombre;
-      document.getElementById("notaCoincidenciaTelefono").className = "nota-coincidencia encontrado";
-      document.getElementById("notaCoincidenciaTelefono").textContent = "✓ Cliente encontrado: " + c.nombre + " (se vinculará a su cuenta)";
+      mcmClienteVinculado = { uid, nombre: c.nombre, telefono: c.telefono };
+      document.getElementById("mcmNombre").value = c.nombre;
+      document.getElementById("mcmNotaTelefono").className = "nota-coincidencia encontrado";
+      document.getElementById("mcmNotaTelefono").textContent = "✓ Cliente encontrado: " + c.nombre + " (se vinculará a su cuenta)";
     }
   }, 400);
 });
 
-// Búsqueda de respaldo por nombre exacto, solo si el teléfono no encontró coincidencia
-let debounceNombre = null;
-document.getElementById("manualNombre").addEventListener("input", (e) => {
-  clearTimeout(debounceNombre);
-  if (clienteVinculadoManual) return; // ya vinculado por teléfono, no hace falta buscar más
+let mcmDebounceNombre = null;
+document.getElementById("mcmNombre").addEventListener("input", (e) => {
+  clearTimeout(mcmDebounceNombre);
+  if (mcmClienteVinculado) return;
   const valor = e.target.value.trim();
-  document.getElementById("notaCoincidenciaNombre").textContent = "";
-
+  document.getElementById("mcmNotaNombre").textContent = "";
   if (valor.length < 3) return;
-  debounceNombre = setTimeout(async () => {
-    if (clienteVinculadoManual) return;
+  mcmDebounceNombre = setTimeout(async () => {
+    if (mcmClienteVinculado) return;
     const snap = await db.ref("clientes").orderByChild("nombre").equalTo(valor).get();
     const datos = snap.val();
     if (datos) {
       const uid = Object.keys(datos)[0];
       const c = datos[uid];
-      clienteVinculadoManual = { uid, nombre: c.nombre, telefono: c.telefono, email: c.email };
-      document.getElementById("manualTelefono").value = c.telefono;
-      document.getElementById("notaCoincidenciaNombre").className = "nota-coincidencia encontrado";
-      document.getElementById("notaCoincidenciaNombre").textContent = "✓ Cliente encontrado: se vinculará a su cuenta (" + c.telefono + ")";
+      mcmClienteVinculado = { uid, nombre: c.nombre, telefono: c.telefono };
+      document.getElementById("mcmTelefono").value = c.telefono;
+      document.getElementById("mcmNotaNombre").className = "nota-coincidencia encontrado";
+      document.getElementById("mcmNotaNombre").textContent = "✓ Cliente encontrado: se vinculará a su cuenta (" + c.telefono + ")";
     }
   }, 500);
 });
 
-document.getElementById("btnGuardarCitaManual").addEventListener("click", async () => {
-  const btn = document.getElementById("btnGuardarCitaManual");
-  const fechaISO = document.getElementById("btnAbrirCitaManual").dataset.fecha;
-  const telefono = limpiarTelefono(document.getElementById("manualTelefono").value);
-  const nombre = document.getElementById("manualNombre").value.trim();
-  const servicioId = document.getElementById("manualServicio").value;
-  const hora = manualHoraSeleccionada;
-  const msg = document.getElementById("msgCitaManual");
+document.getElementById("mcmBtnConfirmar").addEventListener("click", async () => {
+  const btn = document.getElementById("mcmBtnConfirmar");
+  const msg = document.getElementById("mcmMsgDatos");
   msg.textContent = "";
 
-  if (!telefono || !nombre || !servicioId || !hora) {
+  const telefono = limpiarTelefono(document.getElementById("mcmTelefono").value);
+  const nombre = document.getElementById("mcmNombre").value.trim();
+  if (!telefono || !nombre) {
     msg.className = "msg error";
-    msg.textContent = "Rellena teléfono, nombre, servicio y elige una hora.";
+    msg.textContent = "Rellena teléfono y nombre.";
     return;
   }
 
-  const servicio = serviciosCache[servicioId];
-  const inicioMin = horaAMin(hora);
-  const finMin = inicioMin + servicio.duracion;
-  const fin = minAHora(finMin);
+  const fechaISO = mcmResultadoActual.fecha;
+  const inicioMin = mcmResultadoActual.inicioMin;
+  const inicio = minAHora(inicioMin);
+  const fin = minAHora(inicioMin + mcmServicioElegido.duracion);
 
-  // Comprobamos que no choque con ninguna cita ya confirmada ese día
   const choca = citasDelDia(fechaISO).some(c => {
     if (c.estado === "cancelada") return false;
-    return inicioMin < horaAMin(c.fin) && finMin > horaAMin(c.inicio);
+    return inicioMin < horaAMin(c.fin) && (inicioMin + mcmServicioElegido.duracion) > horaAMin(c.inicio);
   });
   if (choca) {
     msg.className = "msg error";
-    msg.textContent = "Esa hora choca con otra cita ya existente ese día.";
+    msg.textContent = "Ese hueco se ha ocupado mientras tanto. Vuelve a buscar.";
     return;
   }
 
@@ -1920,15 +2177,15 @@ document.getElementById("btnGuardarCitaManual").addEventListener("click", async 
   try {
     const nuevaId = db.ref("citas").push().key;
     const datosCita = {
-      clienteId: clienteVinculadoManual ? clienteVinculadoManual.uid : null,
+      clienteId: mcmClienteVinculado ? mcmClienteVinculado.uid : null,
       clienteNombre: nombre,
       clienteTelefono: telefono,
-      servicioId: servicioId,
-      servicioNombre: servicio.nombre,
-      duracion: servicio.duracion,
-      precio: servicio.precio,
+      servicioId: mcmServicioElegido.id,
+      servicioNombre: mcmServicioElegido.nombre,
+      duracion: mcmServicioElegido.duracion,
+      precio: mcmServicioElegido.precio,
       fecha: fechaISO,
-      inicio: hora,
+      inicio: inicio,
       fin: fin,
       estado: "confirmada",
       listaEsperaId: null,
@@ -1938,20 +2195,21 @@ document.getElementById("btnGuardarCitaManual").addEventListener("click", async 
 
     const updates = {};
     updates["citas/" + nuevaId] = datosCita;
-    updates["citasPublicas/" + nuevaId] = { fecha: fechaISO, inicio: hora, fin: fin, estado: "confirmada" };
-    // Si coincide con un cliente dado de alta, también aparece en su "Mis citas"
-    if (clienteVinculadoManual) {
-      updates["citasPorUsuario/" + clienteVinculadoManual.uid + "/" + nuevaId] = datosCita;
+    updates["citasPublicas/" + nuevaId] = { fecha: fechaISO, inicio, fin, estado: "confirmada" };
+    if (mcmClienteVinculado) {
+      updates["citasPorUsuario/" + mcmClienteVinculado.uid + "/" + nuevaId] = datosCita;
     }
 
     await db.ref().update(updates);
-    ocultarFormCitaManual();
+    document.getElementById("modalCitaManual").classList.add("hidden");
+    abrirVistaDia(fechaISO);
   } catch (err) {
     msg.className = "msg error";
     msg.textContent = "Error al guardar: " + err.message;
   }
   btn.disabled = false;
 });
+
 
 </script>
 </body>
