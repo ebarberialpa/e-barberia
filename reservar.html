@@ -39,6 +39,24 @@
   }
   .btn-logout:hover { border-color: #f87171; color: #f87171; }
 
+  .btn-icono {
+    background: transparent;
+    border: 1px solid #475569;
+    color: #94a3b8;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-icono:hover { border-color: #3b82f6; color: #3b82f6; }
+  .btn-icono#btnLogout:hover { border-color: #f87171; color: #f87171; }
+
   .container { max-width: 640px; margin: 0 auto; padding: 20px 16px; }
 
   .tabs {
@@ -420,12 +438,27 @@
     <h1>💈 Reservar cita</h1>
     <div class="email" id="clienteEmail"></div>
   </div>
-  <button class="btn-logout" id="btnLogout">Cerrar sesión</button>
+  <div style="display:flex; gap:8px;">
+    <button class="btn-icono" id="btnContacto" title="Contacto">📞</button>
+    <button class="btn-icono" id="btnLogout" title="Cerrar sesión">🚪</button>
+  </div>
 </header>
 
 <div id="cargando" class="spinner-full">Cargando...</div>
 
 <div class="container hidden" id="container">
+
+  <!-- ===== MODAL DE CONTACTO ===== -->
+  <div class="modal-overlay hidden" id="modalContacto">
+    <div class="modal-caja">
+      <div class="modal-cabecera">
+        <div>📞 Contacto</div>
+        <button class="modal-cerrar" id="cerrarModalContacto">✕</button>
+      </div>
+      <div id="modalContactoContenido"></div>
+    </div>
+  </div>
+
 
   <div class="aviso-penalizacion" id="avisoNoShows"></div>
 
@@ -593,6 +626,7 @@ let servicios = {};
 let horario = {};
 let excepciones = {};
 let horasCancelacion = 24;
+let datosContacto = {};
 
 let servicioElegido = null;
 let mesVisible = new Date();
@@ -616,12 +650,13 @@ auth.onAuthStateChanged(async (user) => {
   usuarioActual = user;
   document.getElementById("clienteEmail").textContent = user.email;
 
-  const [snapCliente, snapServicios, snapHorario, snapExcepciones, snapCancelacion] = await Promise.all([
+  const [snapCliente, snapServicios, snapHorario, snapExcepciones, snapCancelacion, snapContacto] = await Promise.all([
     db.ref("clientes/" + user.uid).get(),
     db.ref("servicios").get(),
     db.ref("horario").get(),
     db.ref("excepciones").get(),
-    db.ref("ajustes/horasCancelacion").get()
+    db.ref("ajustes/horasCancelacion").get(),
+    db.ref("ajustes/contacto").get()
   ]);
 
   clientePerfil = snapCliente.val() || {};
@@ -629,8 +664,10 @@ auth.onAuthStateChanged(async (user) => {
   horario = snapHorario.val() || {};
   excepciones = snapExcepciones.val() || {};
   horasCancelacion = snapCancelacion.val() != null ? snapCancelacion.val() : 24;
+  datosContacto = snapContacto.val() || {};
 
   aplicarLimitesHorarioReal();
+  renderContacto();
   mostrarAvisoNoShows();
   renderServicios();
   cargarMisCitas();
@@ -643,6 +680,30 @@ auth.onAuthStateChanged(async (user) => {
 document.getElementById("btnLogout").addEventListener("click", async () => {
   await auth.signOut();
   window.location.href = "index.html";
+});
+
+function renderContacto() {
+  const cont = document.getElementById("modalContactoContenido");
+  const c = datosContacto;
+  if (!c.telefono && !c.direccion && !c.email) {
+    cont.innerHTML = '<div class="empty">El negocio aún no ha añadido datos de contacto.</div>';
+    return;
+  }
+  let html = "";
+  if (c.telefono) html += `<div class="resumen-linea"><span class="label">Teléfono</span><span class="valor"><a href="tel:${escapeHtml(c.telefono)}" style="color:#60a5fa; text-decoration:none;">${escapeHtml(c.telefono)}</a></span></div>`;
+  if (c.direccion) html += `<div class="resumen-linea"><span class="label">Dirección</span><span class="valor">${escapeHtml(c.direccion)}</span></div>`;
+  if (c.email) html += `<div class="resumen-linea"><span class="label">Email</span><span class="valor"><a href="mailto:${escapeHtml(c.email)}" style="color:#60a5fa; text-decoration:none;">${escapeHtml(c.email)}</a></span></div>`;
+  cont.innerHTML = html;
+}
+
+document.getElementById("btnContacto").addEventListener("click", () => {
+  document.getElementById("modalContacto").classList.remove("hidden");
+});
+document.getElementById("cerrarModalContacto").addEventListener("click", () => {
+  document.getElementById("modalContacto").classList.add("hidden");
+});
+document.getElementById("modalContacto").addEventListener("click", (e) => {
+  if (e.target.id === "modalContacto") document.getElementById("modalContacto").classList.add("hidden");
 });
 
 function mostrarAvisoNoShows() {
