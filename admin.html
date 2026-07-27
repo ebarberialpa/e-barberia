@@ -456,6 +456,98 @@
   }
   .nota-coincidencia.encontrado { color: #4ade80; }
   .nota-coincidencia.nuevo { color: #64748b; }
+
+  .dia-nav-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    gap: 10px;
+  }
+  .dia-nav-header h2 { text-transform: capitalize; text-align: center; flex: 1; }
+
+  .resumen-ingresos {
+    display: none;
+    background: #1e293b;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: #94a3b8;
+  }
+  .resumen-ingresos.visible { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  .resumen-ingresos strong { color: #4ade80; font-size: 14px; }
+
+  .slots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    gap: 8px;
+  }
+  .slot-btn {
+    padding: 9px 6px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 13px;
+    cursor: pointer;
+    text-align: center;
+  }
+  .slot-btn:hover { border-color: #3b82f6; }
+  .slot-btn.selected { background: #3b82f6; border-color: #3b82f6; color: #fff; font-weight: 600; }
+
+  /* ---- Modales personalizados (sustituyen a confirm/alert/prompt nativos) ---- */
+  .modal-overlay-custom {
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .modal-caja-custom {
+    background: #273549;
+    border-radius: 16px;
+    padding: 22px;
+    width: 100%;
+    max-width: 360px;
+  }
+  .modal-mensaje-custom {
+    font-size: 14px;
+    color: #f1f5f9;
+    line-height: 1.5;
+    margin-bottom: 18px;
+    white-space: pre-line;
+  }
+  .modal-input-custom {
+    width: 100%;
+    padding: 11px 12px;
+    border-radius: 9px;
+    border: 1px solid #334155;
+    background: #1e293b;
+    color: #f1f5f9;
+    font-size: 14px;
+    outline: none;
+    margin-bottom: 16px;
+  }
+  .modal-input-custom:focus { border-color: #3b82f6; }
+  .modal-botones-custom { display: flex; gap: 8px; }
+  .modal-botones-custom button { margin-top: 0; }
+  .modal-monto-opciones { display: flex; gap: 8px; margin-bottom: 16px; }
+  .modal-monto-opciones label {
+    flex: 1;
+    text-align: center;
+    padding: 12px 6px;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #94a3b8;
+  }
+  .modal-monto-opciones label:has(input:checked) { border-color: #4ade80; background: rgba(74,222,128,0.08); color: #4ade80; font-weight: 600; }
+  .modal-monto-opciones input { display: none; }
 </style>
 </head>
 <body>
@@ -466,6 +558,7 @@
     <div class="email" id="adminEmail"></div>
   </div>
   <div style="display:flex; gap:8px;">
+    <button class="btn-logout" id="btnCitaRapida" title="Añadir cita">+ Cita</button>
     <button class="btn-logout" id="btnAjustes" title="Configuración">⚙️</button>
     <button class="btn-logout" id="btnLogout">Cerrar sesión</button>
   </div>
@@ -487,9 +580,20 @@
       <div>🕓 Lista de espera compatible</div>
     </div>
   </div>
+</div>
 
-  <div class="card" id="cardDiaDetalle" style="display:none;">
-    <h2 id="tituloDiaDetalle"></h2>
+<!-- ===== VISTA DE DETALLE DE DÍA ===== -->
+<div class="container hidden" id="vistaDiaDetalle">
+  <span class="paso-atras" id="volverACalendarioDesdeDia">← Volver al calendario</span>
+
+  <div class="card">
+    <div class="dia-nav-header">
+      <button class="cal-nav" id="diaAnterior">‹</button>
+      <h2 id="tituloDiaDetalle" style="margin:0;"></h2>
+      <button class="cal-nav" id="diaSiguiente">›</button>
+    </div>
+
+    <div class="resumen-ingresos" id="resumenIngresosDia"></div>
 
     <button class="btn-cita-manual" id="btnAbrirCitaManual">+ Añadir cita manual (cliente que llama por teléfono)</button>
 
@@ -509,10 +613,11 @@
         <select id="manualServicio"></select>
       </div>
       <div class="field">
-        <label for="manualHora">Hora</label>
-        <input type="time" id="manualHora">
+        <label>Hora</label>
+        <div class="slots-grid" id="manualSlotsGrid"></div>
+        <div class="empty hidden" id="manualSinHuecos" style="padding:10px 0;">No quedan huecos libres este día.</div>
       </div>
-      <button class="primary" id="btnGuardarCitaManual">Añadir cita</button>
+      <button class="primary" id="btnGuardarCitaManual" disabled>Añadir cita</button>
       <button class="secondary" id="btnCancelarCitaManual">Cancelar</button>
       <div class="msg" id="msgCitaManual"></div>
     </div>
@@ -800,7 +905,7 @@ function cargarServicios() {
     cont.querySelectorAll("[data-delete]").forEach(btn => {
       btn.addEventListener("click", async () => {
         const id = btn.dataset.delete;
-        if (confirm("¿Eliminar este servicio? Esta acción no se puede deshacer.")) {
+        if (await mostrarConfirm("¿Eliminar este servicio? Esta acción no se puede deshacer.")) {
           await db.ref("servicios/" + id).remove();
           if (document.getElementById("svEditId").value === id) resetFormServicio();
         }
@@ -1095,7 +1200,7 @@ function cargarExcepciones() {
     cont.querySelectorAll("[data-delete-ex]").forEach(btn => {
       btn.addEventListener("click", async () => {
         const id = btn.dataset.deleteEx;
-        if (confirm("¿Eliminar este periodo marcado?")) {
+        if (await mostrarConfirm("¿Eliminar este periodo marcado?")) {
           await db.ref("excepciones/" + id).remove();
           if (document.getElementById("exEditId").value === id) resetFormExcepcion();
         }
@@ -1109,6 +1214,85 @@ function escapeHtml(str) {
   const div = document.createElement("div");
   div.textContent = str == null ? "" : String(str);
   return div.innerHTML;
+}
+
+// =========================================================
+// MODALES PERSONALIZADOS (sustituyen a confirm/alert/prompt nativos)
+// =========================================================
+function mostrarConfirm(mensaje, opciones) {
+  opciones = opciones || {};
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay-custom";
+    overlay.innerHTML = `
+      <div class="modal-caja-custom">
+        <div class="modal-mensaje-custom">${escapeHtml(mensaje)}</div>
+        <div class="modal-botones-custom">
+          <button class="secondary" id="mcCancelar">${escapeHtml(opciones.cancelText || "Cancelar")}</button>
+          <button class="primary" id="mcOk">${escapeHtml(opciones.okText || "Aceptar")}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const cerrar = (valor) => { overlay.remove(); resolve(valor); };
+    overlay.querySelector("#mcCancelar").addEventListener("click", () => cerrar(false));
+    overlay.querySelector("#mcOk").addEventListener("click", () => cerrar(true));
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) cerrar(false); });
+  });
+}
+
+function mostrarAlerta(mensaje) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay-custom";
+    overlay.innerHTML = `
+      <div class="modal-caja-custom">
+        <div class="modal-mensaje-custom">${escapeHtml(mensaje)}</div>
+        <div class="modal-botones-custom">
+          <button class="primary" id="maOk" style="width:100%;">Entendido</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const cerrar = () => { overlay.remove(); resolve(); };
+    overlay.querySelector("#maOk").addEventListener("click", cerrar);
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) cerrar(); });
+  });
+}
+
+// Modal de cobro al marcar una cita como completada: importe + método de pago
+function mostrarModalCobro(precioSugerido) {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay-custom";
+    overlay.innerHTML = `
+      <div class="modal-caja-custom">
+        <div class="modal-mensaje-custom">Marcar cita como completada</div>
+        <div class="field">
+          <label for="mcImporte">Importe cobrado (€)</label>
+          <input type="number" id="mcImporte" class="modal-input-custom" min="0" step="0.5" value="${Number(precioSugerido).toFixed(2)}">
+        </div>
+        <div class="modal-monto-opciones">
+          <label><input type="radio" name="mcMetodoPago" value="efectivo" checked><span>💵 Efectivo</span></label>
+          <label><input type="radio" name="mcMetodoPago" value="tarjeta"><span>💳 Tarjeta</span></label>
+        </div>
+        <div class="modal-botones-custom">
+          <button class="secondary" id="mcCobroCancelar">Cancelar</button>
+          <button class="primary" id="mcCobroOk">Confirmar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    const input = overlay.querySelector("#mcImporte");
+    input.focus();
+    input.select();
+    const cerrar = (valor) => { overlay.remove(); resolve(valor); };
+    overlay.querySelector("#mcCobroCancelar").addEventListener("click", () => cerrar(null));
+    overlay.querySelector("#mcCobroOk").addEventListener("click", () => {
+      const importe = parseFloat(input.value);
+      const metodoPago = overlay.querySelector('input[name="mcMetodoPago"]:checked').value;
+      if (isNaN(importe) || importe < 0) { input.focus(); return; }
+      cerrar({ importe, metodoPago });
+    });
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) cerrar(null); });
+  });
 }
 
 // =========================================================
@@ -1274,7 +1458,7 @@ function renderCalendarioAdmin() {
   document.getElementById("calAdminMesAnterior").disabled = (mesVisibleAdmin.getFullYear() === new Date().getFullYear() && mesVisibleAdmin.getMonth() === new Date().getMonth());
 
   document.querySelectorAll("#calGridAdmin [data-fecha]").forEach(el => {
-    el.addEventListener("click", () => mostrarDetalleDia(el.dataset.fecha));
+    el.addEventListener("click", () => abrirVistaDia(el.dataset.fecha));
   });
 }
 
@@ -1287,13 +1471,51 @@ document.getElementById("calAdminMesSiguiente").addEventListener("click", () => 
   renderCalendarioAdmin();
 });
 
+// ---------- Cambiar entre la vista de calendario y la vista de detalle de día ----------
+function abrirVistaDia(fechaISO) {
+  document.getElementById("vistaCalendario").classList.add("hidden");
+  document.getElementById("vistaDiaDetalle").classList.remove("hidden");
+  mostrarDetalleDia(fechaISO);
+}
+
+document.getElementById("volverACalendarioDesdeDia").addEventListener("click", () => {
+  document.getElementById("vistaDiaDetalle").classList.add("hidden");
+  document.getElementById("vistaCalendario").classList.remove("hidden");
+  fechaSeleccionadaAdmin = null;
+  renderCalendarioAdmin();
+});
+
+function sumarDias(fechaISO, delta) {
+  const d = new Date(fechaISO + "T00:00:00");
+  d.setDate(d.getDate() + delta);
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+
+document.getElementById("diaAnterior").addEventListener("click", () => {
+  const nuevaFecha = sumarDias(fechaSeleccionadaAdmin, -1);
+  mesVisibleAdmin = new Date(nuevaFecha + "T00:00:00");
+  mesVisibleAdmin.setDate(1);
+  mostrarDetalleDia(nuevaFecha);
+});
+document.getElementById("diaSiguiente").addEventListener("click", () => {
+  const nuevaFecha = sumarDias(fechaSeleccionadaAdmin, 1);
+  mesVisibleAdmin = new Date(nuevaFecha + "T00:00:00");
+  mesVisibleAdmin.setDate(1);
+  mostrarDetalleDia(nuevaFecha);
+});
+
+// ---------- Botón "+ Cita" de la cabecera: acceso rápido a cita manual en el día de hoy ----------
+document.getElementById("btnCitaRapida").addEventListener("click", () => {
+  abrirVistaDia(hoyISO());
+  setTimeout(() => document.getElementById("btnAbrirCitaManual").click(), 50);
+});
+
 // ---------- Detalle de un día: citas + lista de espera compatible ----------
 async function mostrarDetalleDia(fechaISO) {
   fechaSeleccionadaAdmin = fechaISO;
   renderCalendarioAdmin();
+  renderResumenIngresosDia(fechaISO);
 
-  const card = document.getElementById("cardDiaDetalle");
-  card.style.display = "block";
   const fechaFmt = new Date(fechaISO + "T00:00:00").toLocaleDateString("es-ES", { weekday: 'long', day: 'numeric', month: 'long' });
   document.getElementById("tituloDiaDetalle").textContent = fechaFmt;
   document.getElementById("btnAbrirCitaManual").dataset.fecha = fechaISO;
@@ -1354,14 +1576,14 @@ async function mostrarDetalleDia(fechaISO) {
     cont.innerHTML = html;
 
     cont.querySelectorAll("[data-completar]").forEach(btn => {
-      btn.addEventListener("click", () => marcarEstadoCita(btn.dataset.completar, "completada"));
+      btn.addEventListener("click", () => completarCitaConCobro(btn.dataset.completar));
     });
     cont.querySelectorAll("[data-noshow]").forEach(btn => {
       btn.addEventListener("click", () => marcarEstadoCita(btn.dataset.noshow, "noShow"));
     });
     cont.querySelectorAll("[data-cancelaradmin]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        if (confirm("¿Cancelar esta cita?")) marcarEstadoCita(btn.dataset.cancelaradmin, "cancelada");
+      btn.addEventListener("click", async () => {
+        if (await mostrarConfirm("¿Cancelar esta cita?")) marcarEstadoCita(btn.dataset.cancelaradmin, "cancelada");
       });
     });
   }
@@ -1409,7 +1631,7 @@ async function mostrarDetalleDia(fechaISO) {
 }
 
 // ---------- Marcar completada / no-show / cancelar (admin) ----------
-async function marcarEstadoCita(citaId, nuevoEstado) {
+async function marcarEstadoCita(citaId, nuevoEstado, datosCobro) {
   const cita = citasCache[citaId];
   if (!cita) return;
 
@@ -1417,9 +1639,18 @@ async function marcarEstadoCita(citaId, nuevoEstado) {
   updates["citas/" + citaId + "/estado"] = nuevoEstado;
   updates["citasPublicas/" + citaId + "/estado"] = nuevoEstado;
 
+  if (datosCobro) {
+    updates["citas/" + citaId + "/importeCobrado"] = datosCobro.importe;
+    updates["citas/" + citaId + "/metodoPago"] = datosCobro.metodoPago;
+  }
+
   // Solo hay copia en citasPorUsuario y contadores de cliente si la cita está vinculada a una cuenta
   if (cita.clienteId) {
     updates["citasPorUsuario/" + cita.clienteId + "/" + citaId + "/estado"] = nuevoEstado;
+    if (datosCobro) {
+      updates["citasPorUsuario/" + cita.clienteId + "/" + citaId + "/importeCobrado"] = datosCobro.importe;
+      updates["citasPorUsuario/" + cita.clienteId + "/" + citaId + "/metodoPago"] = datosCobro.metodoPago;
+    }
     if (cita.listaEsperaId && nuevoEstado !== "confirmada") {
       updates["listaEspera/" + cita.listaEsperaId + "/estado"] = "cancelada";
       updates["listaEsperaPorUsuario/" + cita.clienteId + "/" + cita.listaEsperaId + "/estado"] = "cancelada";
@@ -1438,6 +1669,36 @@ async function marcarEstadoCita(citaId, nuevoEstado) {
   }
 }
 
+// Al completar una cita, pedimos el importe realmente cobrado y el método de pago,
+// para poder calcular el resumen de ingresos del día.
+async function completarCitaConCobro(citaId) {
+  const cita = citasCache[citaId];
+  if (!cita) return;
+  const resultado = await mostrarModalCobro(cita.precio);
+  if (!resultado) return;
+  await marcarEstadoCita(citaId, "completada", resultado);
+}
+
+// Suma de lo cobrado en el día, desglosado por método de pago
+function renderResumenIngresosDia(fechaISO) {
+  const cont = document.getElementById("resumenIngresosDia");
+  const completadas = citasDelDia(fechaISO).filter(c => c.estado === "completada" && c.importeCobrado != null);
+
+  if (completadas.length === 0) {
+    cont.classList.remove("visible");
+    return;
+  }
+  const totalEfectivo = completadas.filter(c => c.metodoPago === "efectivo").reduce((s, c) => s + Number(c.importeCobrado), 0);
+  const totalTarjeta = completadas.filter(c => c.metodoPago === "tarjeta").reduce((s, c) => s + Number(c.importeCobrado), 0);
+  const total = totalEfectivo + totalTarjeta;
+
+  cont.classList.add("visible");
+  cont.innerHTML = `
+    <div>💵 Efectivo<br><strong>${totalEfectivo.toFixed(2)} €</strong></div>
+    <div>💳 Tarjeta<br><strong>${totalTarjeta.toFixed(2)} €</strong></div>
+    <div>Total<br><strong>${total.toFixed(2)} €</strong></div>`;
+}
+
 // ---------- Mover una cita de lista de espera a un hueco libre de este día ----------
 async function moverCitaDesdeListaEspera(listaEsperaId, fechaISO) {
   const le = listaEsperaCache[listaEsperaId];
@@ -1445,13 +1706,14 @@ async function moverCitaDesdeListaEspera(listaEsperaId, fechaISO) {
 
   const inicioMin = primerHuecoCompatible(fechaISO, le);
   if (inicioMin == null) {
-    alert("Ese hueco ya no está disponible (puede que se acabe de ocupar). Recarga y prueba de nuevo.");
+    await mostrarAlerta("Ese hueco ya no está disponible (puede que se acabe de ocupar). Recarga y prueba de nuevo.");
     return;
   }
   const inicio = minAHora(inicioMin);
   const fin = minAHora(inicioMin + le.duracion);
 
-  if (!confirm(`¿Mover la cita de ${le.clienteNombre} a ${fechaISO} a las ${inicio}? Se liberará su cita anterior del ${le.fechaCitaActual}.`)) return;
+  const confirmado = await mostrarConfirm(`¿Mover la cita de ${le.clienteNombre} a ${fechaISO} a las ${inicio}? Se liberará su cita anterior del ${le.fechaCitaActual}.`, { okText: "Mover cita" });
+  if (!confirmado) return;
 
   const nuevaId = db.ref("citas").push().key;
   const citaAnterior = citasCache[le.citaId];
@@ -1489,13 +1751,14 @@ async function moverCitaDesdeListaEspera(listaEsperaId, fechaISO) {
   updates["listaEsperaPorUsuario/" + le.clienteId + "/" + listaEsperaId + "/estado"] = "resuelta";
 
   await db.ref().update(updates);
-  alert("Cita movida correctamente. Recuerda avisar al cliente si aún no lo has hecho.");
+  await mostrarAlerta("Cita movida correctamente. Recuerda avisar al cliente si aún no lo has hecho.");
 }
 
 // =========================================================
 // CITAS MANUALES (cliente que llama por teléfono)
 // =========================================================
 let clienteVinculadoManual = null; // { uid, nombre, telefono, email } si coincide con un cliente dado de alta
+let manualHoraSeleccionada = null;
 
 function ocultarFormCitaManual() {
   document.getElementById("formCitaManual").classList.add("hidden");
@@ -1507,12 +1770,13 @@ document.getElementById("btnAbrirCitaManual").addEventListener("click", () => {
   document.getElementById("btnAbrirCitaManual").classList.add("hidden");
 
   clienteVinculadoManual = null;
+  manualHoraSeleccionada = null;
   document.getElementById("manualTelefono").value = "";
   document.getElementById("manualNombre").value = "";
-  document.getElementById("manualHora").value = "";
   document.getElementById("notaCoincidenciaTelefono").textContent = "";
   document.getElementById("notaCoincidenciaNombre").textContent = "";
   document.getElementById("msgCitaManual").textContent = "";
+  document.getElementById("btnGuardarCitaManual").disabled = true;
 
   // Rellenamos el selector de servicios activos
   const sel = document.getElementById("manualServicio");
@@ -1520,7 +1784,51 @@ document.getElementById("btnAbrirCitaManual").addEventListener("click", () => {
   sel.innerHTML = idsServicios.map(id =>
     `<option value="${id}">${escapeHtml(serviciosCache[id].nombre)} (${serviciosCache[id].duracion} min)</option>`
   ).join("");
+
+  renderHuecosManual();
 });
+
+// Recalcula y pinta los huecos libres del día según la duración del servicio elegido
+function renderHuecosManual() {
+  manualHoraSeleccionada = null;
+  document.getElementById("btnGuardarCitaManual").disabled = true;
+
+  const fechaISO = document.getElementById("btnAbrirCitaManual").dataset.fecha;
+  const servicioId = document.getElementById("manualServicio").value;
+  const servicio = serviciosCache[servicioId];
+  const grid = document.getElementById("manualSlotsGrid");
+  const sinHuecos = document.getElementById("manualSinHuecos");
+
+  if (!servicio || !fechaISO) { grid.innerHTML = ""; return; }
+
+  const libres = huecosLibresDia(fechaISO);
+  const slots = [];
+  libres.forEach(l => {
+    for (let t = l.inicio; t + servicio.duracion <= l.fin; t += servicio.duracion) {
+      slots.push(t);
+    }
+  });
+
+  if (slots.length === 0) {
+    grid.innerHTML = "";
+    sinHuecos.classList.remove("hidden");
+    return;
+  }
+  sinHuecos.classList.add("hidden");
+  grid.innerHTML = slots.map(t => `<div class="slot-btn" data-min="${t}">${minAHora(t)}</div>`).join("");
+
+  grid.querySelectorAll("[data-min]").forEach(el => {
+    el.addEventListener("click", () => {
+      grid.querySelectorAll(".slot-btn").forEach(s => s.classList.remove("selected"));
+      el.classList.add("selected");
+      manualHoraSeleccionada = minAHora(parseInt(el.dataset.min, 10));
+      document.getElementById("btnGuardarCitaManual").disabled = false;
+    });
+  });
+}
+
+document.getElementById("manualServicio").addEventListener("change", renderHuecosManual);
+
 
 document.getElementById("btnCancelarCitaManual").addEventListener("click", ocultarFormCitaManual);
 
@@ -1582,13 +1890,13 @@ document.getElementById("btnGuardarCitaManual").addEventListener("click", async 
   const telefono = limpiarTelefono(document.getElementById("manualTelefono").value);
   const nombre = document.getElementById("manualNombre").value.trim();
   const servicioId = document.getElementById("manualServicio").value;
-  const hora = document.getElementById("manualHora").value;
+  const hora = manualHoraSeleccionada;
   const msg = document.getElementById("msgCitaManual");
   msg.textContent = "";
 
   if (!telefono || !nombre || !servicioId || !hora) {
     msg.className = "msg error";
-    msg.textContent = "Rellena teléfono, nombre, servicio y hora.";
+    msg.textContent = "Rellena teléfono, nombre, servicio y elige una hora.";
     return;
   }
 
