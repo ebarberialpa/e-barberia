@@ -634,6 +634,15 @@
     font-size: 14px;
   }
   .desde-hasta-linea span { color: #64748b; flex-shrink: 0; }
+  .marco-personalizado input[type="date"] {
+    width: 100%;
+    padding: 10px;
+    border-radius: 9px;
+    border: 1px solid #334155;
+    background: #273549;
+    color: #f1f5f9;
+    font-size: 14px;
+  }
   .dias-semana-selector { display: flex; gap: 6px; }
   .dia-pill {
     flex: 1;
@@ -987,6 +996,15 @@
           <label class="dia-pill"><input type="checkbox" class="mcm-pref-dia" value="sabado" checked><span>S</span></label>
         </div>
       </label>
+
+      <label class="marco-personalizado" id="mcmMarcoDiaConcreto" style="margin-top:10px;">
+        <div class="marco-personalizado-header">
+          <input type="radio" name="mcmPreferencia" value="diaConcreto" id="mcmRadioDiaConcreto">
+          <span>Día concreto</span>
+        </div>
+        <input type="date" id="mcmFechaConcreta">
+      </label>
+
       <button class="primary" id="mcmBtnBuscar" style="margin-top:16px;">Buscar primer hueco</button>
       <div class="msg" id="mcmMsgFranja"></div>
     </div>
@@ -2338,13 +2356,23 @@ function mcmAbrirPasoFranja() {
     if (input.value < min) input.value = min;
     if (input.value > max) input.value = max;
   });
+  document.getElementById("mcmFechaConcreta").min = hoyISO();
+  if (!document.getElementById("mcmFechaConcreta").value) {
+    document.getElementById("mcmFechaConcreta").value = hoyISO();
+  }
 }
 
 ["mcmDesde", "mcmHasta"].forEach(id => {
-  document.getElementById(id).addEventListener("focus", () => { document.getElementById("mcmRadioPersonalizada").checked = true; });
+  const input = document.getElementById(id);
+  ["focus", "input", "change", "click", "mousedown"].forEach(evento => {
+    input.addEventListener(evento, () => { document.getElementById("mcmRadioPersonalizada").checked = true; });
+  });
 });
 document.querySelectorAll(".mcm-pref-dia").forEach(chk => {
   chk.addEventListener("change", () => { document.getElementById("mcmRadioPersonalizada").checked = true; });
+});
+["focus", "input", "change", "click", "mousedown"].forEach(evento => {
+  document.getElementById("mcmFechaConcreta").addEventListener(evento, () => { document.getElementById("mcmRadioDiaConcreto").checked = true; });
 });
 
 function mcmObtenerVentana() {
@@ -2395,8 +2423,26 @@ function mcmBuscarDesde(fechaInicioISO, ventana, duracion, maxDias) {
 }
 
 document.getElementById("mcmBtnBuscar").addEventListener("click", () => {
-  const ventana = mcmObtenerVentana();
+  const tipo = document.querySelector('input[name="mcmPreferencia"]:checked').value;
   const msg = document.getElementById("mcmMsgFranja");
+
+  // ---- Modo "Día concreto": no se busca hacia adelante, solo se consulta ese día ----
+  if (tipo === "diaConcreto") {
+    const fechaElegida = document.getElementById("mcmFechaConcreta").value;
+    if (!fechaElegida) {
+      msg.className = "msg error";
+      msg.textContent = "Elige una fecha.";
+      return;
+    }
+    msg.textContent = "";
+    const ventanaCompleta = { inicio: 0, fin: 24 * 60, dias: null };
+    const slots = mcmHuecosDelDia(fechaElegida, ventanaCompleta, mcmServicioElegido.duracion);
+    const resultado = slots.length > 0 ? { fecha: fechaElegida, slots } : null;
+    mcmMostrarResultado(resultado, ventanaCompleta, { fijo: true });
+    return;
+  }
+
+  const ventana = mcmObtenerVentana();
   if (ventana.fin <= ventana.inicio) {
     msg.className = "msg error";
     msg.textContent = 'La hora "hasta" debe ser posterior a la hora "desde".';
@@ -2409,19 +2455,27 @@ document.getElementById("mcmBtnBuscar").addEventListener("click", () => {
   }
   msg.textContent = "";
   const resultado = mcmBuscarDesde(hoyISO(), ventana, mcmServicioElegido.duracion);
-  mcmMostrarResultado(resultado, ventana);
+  mcmMostrarResultado(resultado, ventana, { fijo: false });
 });
 
-function mcmMostrarResultado(resultado, ventana) {
-  mcmResultadoActual = resultado ? { ...resultado, ventana } : null;
+function mcmMostrarResultado(resultado, ventana, opciones) {
+  opciones = opciones || {};
+  mcmResultadoActual = resultado ? { ...resultado, ventana, fijo: opciones.fijo } : null;
   mcmMostrarPaso("mcmPasoResultado");
   const gridCont = document.getElementById("mcmSlotsGrid");
   const fechaCont = document.getElementById("mcmResultadoFecha");
   const sinResultado = document.getElementById("mcmSinResultado");
+  const btnSiguiente = document.getElementById("mcmBtnSiguiente");
+
+  // En modo "día concreto" no tiene sentido "buscar siguiente" (el día ya lo eligió el admin)
+  btnSiguiente.classList.toggle("hidden", !!opciones.fijo);
 
   if (!resultado) {
     fechaCont.textContent = "";
     gridCont.innerHTML = "";
+    sinResultado.textContent = opciones.fijo
+      ? "No hay huecos disponibles ese día para este servicio."
+      : "No se ha encontrado ningún día con hueco compatible en los próximos meses.";
     sinResultado.classList.remove("hidden");
     return;
   }
@@ -2442,7 +2496,7 @@ document.getElementById("mcmBtnSiguiente").addEventListener("click", () => {
   if (!mcmResultadoActual) return;
   const siguienteFecha = sumarDias(mcmResultadoActual.fecha, 1);
   const resultado = mcmBuscarDesde(siguienteFecha, mcmResultadoActual.ventana, mcmServicioElegido.duracion);
-  mcmMostrarResultado(resultado, mcmResultadoActual.ventana);
+  mcmMostrarResultado(resultado, mcmResultadoActual.ventana, { fijo: false });
 });
 
 function mcmAbrirPasoDatos() {
