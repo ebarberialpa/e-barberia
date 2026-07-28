@@ -875,9 +875,33 @@
     </div>
 
     <div class="card">
-      <h2>Cargar festivos nacionales de España</h2>
+      <h2>Cargar festivos nacionales y autonómicos</h2>
       <div style="font-size:12px; color:#64748b; margin-bottom:14px;">
-        No existe una API pública y fiable con las fiestas locales de cada municipio español (las fija cada ayuntamiento y no están centralizadas), así que esto carga los <strong>festivos nacionales</strong> del año elegido. Revisa las casillas que quieras importar y añade a mano las 2 fiestas locales de tu municipio.
+        No existe una API pública y fiable con las fiestas locales de cada municipio español (las fija cada ayuntamiento y no están centralizadas), así que esto carga los festivos <strong>nacionales</strong> y los <strong>propios de la comunidad autónoma</strong> elegida. Revisa las casillas que quieras importar y añade a mano las 2 fiestas locales de tu municipio.
+      </div>
+      <div class="field">
+        <label for="festivosComunidad">Comunidad autónoma</label>
+        <select id="festivosComunidad">
+          <option value="ES-AN">Andalucía</option>
+          <option value="ES-AR">Aragón</option>
+          <option value="ES-AS">Asturias</option>
+          <option value="ES-IB">Islas Baleares</option>
+          <option value="ES-CN" selected>Canarias</option>
+          <option value="ES-CB">Cantabria</option>
+          <option value="ES-CL">Castilla y León</option>
+          <option value="ES-CM">Castilla-La Mancha</option>
+          <option value="ES-CT">Cataluña</option>
+          <option value="ES-VC">Comunidad Valenciana</option>
+          <option value="ES-EX">Extremadura</option>
+          <option value="ES-GA">Galicia</option>
+          <option value="ES-MD">Madrid</option>
+          <option value="ES-MC">Región de Murcia</option>
+          <option value="ES-NC">Navarra</option>
+          <option value="ES-PV">País Vasco</option>
+          <option value="ES-RI">La Rioja</option>
+          <option value="ES-CE">Ceuta</option>
+          <option value="ES-ML">Melilla</option>
+        </select>
       </div>
       <div class="row-2">
         <div class="field">
@@ -970,12 +994,11 @@
     <!-- Paso 3: resultado de la búsqueda -->
     <div id="mcmPasoResultado" class="hidden">
       <span class="paso-atras" id="mcmVolverFranja">← Cambiar preferencia</span>
-      <div class="paso-mini-titulo">3. Primer hueco encontrado</div>
-      <div id="mcmResultadoTexto" class="mcm-resultado-caja"></div>
-      <div style="display:flex; gap:8px; margin-top:14px;">
-        <button class="secondary" id="mcmBtnSiguiente" style="margin-top:0;">Buscar siguiente</button>
-        <button class="primary" id="mcmBtnElegir" style="margin-top:0;">Elegir esta hora</button>
-      </div>
+      <div class="paso-mini-titulo">3. Elige un hueco</div>
+      <div id="mcmResultadoFecha" style="text-align:center; font-weight:600; color:#f1f5f9; margin-bottom:10px; text-transform:capitalize;"></div>
+      <div class="slots-grid" id="mcmSlotsGrid"></div>
+      <div class="empty hidden" id="mcmSinResultado">No se ha encontrado ningún día con hueco compatible en los próximos meses.</div>
+      <button class="secondary" id="mcmBtnSiguiente" style="margin-top:14px;">Buscar siguiente día</button>
     </div>
 
     <!-- Paso 4: datos personales -->
@@ -1558,13 +1581,14 @@ document.getElementById("btnCancelarEdicionExcepcion").addEventListener("click",
 let excepcionesCache = {};
 
 // =========================================================
-// FESTIVOS NACIONALES (importación desde API pública, sin coste)
+// FESTIVOS NACIONALES Y AUTONÓMICOS (importación desde API pública, sin coste)
 // =========================================================
 document.getElementById("festivosAno").value = new Date().getFullYear();
 let festivosNacionalesEncontrados = [];
 
 document.getElementById("btnCargarFestivosNacionales").addEventListener("click", async () => {
   const ano = document.getElementById("festivosAno").value;
+  const comunidad = document.getElementById("festivosComunidad").value;
   const cont = document.getElementById("listaFestivosNacionales");
   const msg = document.getElementById("msgFestivosNacionales");
   const btnAnadir = document.getElementById("btnAnadirFestivosSeleccionados");
@@ -1575,10 +1599,13 @@ document.getElementById("btnCargarFestivosNacionales").addEventListener("click",
   try {
     const resp = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${ano}/ES`);
     if (!resp.ok) throw new Error("No se pudo consultar el servicio de festivos");
-    festivosNacionalesEncontrados = await resp.json();
+    const todos = await resp.json();
+
+    // Nos quedamos con los festivos que aplican a todo el país, o específicamente a la comunidad elegida
+    festivosNacionalesEncontrados = todos.filter(f => f.global || (f.counties && f.counties.includes(comunidad)));
 
     if (!festivosNacionalesEncontrados.length) {
-      cont.innerHTML = '<div class="empty">No se han encontrado festivos para ese año.</div>';
+      cont.innerHTML = '<div class="empty">No se han encontrado festivos para esa combinación de año y comunidad.</div>';
       return;
     }
 
@@ -1587,7 +1614,7 @@ document.getElementById("btnCargarFestivosNacionales").addEventListener("click",
       return `
         <label class="dia-pill" style="display:flex; align-items:center; justify-content:flex-start; gap:8px; width:100%; padding:10px 12px; margin-bottom:6px; flex:none;">
           <input type="checkbox" class="chk-festivo-nacional" data-idx="${i}" checked style="display:inline-block; width:auto;">
-          <span style="color:#e2e8f0; font-weight:400;">${fechaFmt} — ${escapeHtml(f.localName)}</span>
+          <span style="color:#e2e8f0; font-weight:400;">${fechaFmt} — ${escapeHtml(f.localName)} <span class="badge ${f.global ? 'on' : 'especial'}" style="margin-left:4px;">${f.global ? 'Nacional' : 'Autonómico'}</span></span>
         </label>`;
     }).join("");
     btnAnadir.classList.remove("hidden");
@@ -2333,17 +2360,21 @@ function mcmObtenerVentana() {
   return { inicio: 0, fin: 24 * 60, dias: null };
 }
 
-function mcmPrimerHuecoDelDia(fechaISO, ventana, duracion) {
+// Todos los huecos (inicio en minutos) de un día que cumplan la ventana de preferencia
+function mcmHuecosDelDia(fechaISO, ventana, duracion) {
   const diaKey = DIAS_SEMANA[new Date(fechaISO + "T00:00:00").getDay()];
-  if (ventana.dias && !ventana.dias.includes(diaKey)) return null;
+  if (ventana.dias && !ventana.dias.includes(diaKey)) return [];
   const libres = huecosLibresDia(fechaISO);
   const floor = fechaISO === hoyISO() ? horaActualMin() : 0;
-  for (const l of libres) {
+  const slots = [];
+  libres.forEach(l => {
     const inicio = Math.max(l.inicio, ventana.inicio, floor);
     const fin = Math.min(l.fin, ventana.fin);
-    if (fin - inicio >= duracion) return inicio;
-  }
-  return null;
+    for (let t = inicio; t + duracion <= fin; t += duracion) {
+      slots.push(t);
+    }
+  });
+  return slots;
 }
 
 function horaActualMin() {
@@ -2351,11 +2382,13 @@ function horaActualMin() {
   return d.getHours() * 60 + d.getMinutes();
 }
 
+// Busca desde fechaInicioISO (inclusive) hacia adelante el primer día con al menos un hueco compatible,
+// y devuelve ESE día junto con TODOS sus huecos disponibles
 function mcmBuscarDesde(fechaInicioISO, ventana, duracion, maxDias) {
   let fecha = fechaInicioISO;
   for (let i = 0; i < (maxDias || 180); i++) {
-    const inicioMin = mcmPrimerHuecoDelDia(fecha, ventana, duracion);
-    if (inicioMin != null) return { fecha, inicioMin };
+    const slots = mcmHuecosDelDia(fecha, ventana, duracion);
+    if (slots.length > 0) return { fecha, slots };
     fecha = sumarDias(fecha, 1);
   }
   return null;
@@ -2382,17 +2415,27 @@ document.getElementById("mcmBtnBuscar").addEventListener("click", () => {
 function mcmMostrarResultado(resultado, ventana) {
   mcmResultadoActual = resultado ? { ...resultado, ventana } : null;
   mcmMostrarPaso("mcmPasoResultado");
-  const cont = document.getElementById("mcmResultadoTexto");
-  const btnElegir = document.getElementById("mcmBtnElegir");
+  const gridCont = document.getElementById("mcmSlotsGrid");
+  const fechaCont = document.getElementById("mcmResultadoFecha");
+  const sinResultado = document.getElementById("mcmSinResultado");
 
   if (!resultado) {
-    cont.innerHTML = "No se ha encontrado ningún hueco compatible en los próximos meses.";
-    btnElegir.disabled = true;
+    fechaCont.textContent = "";
+    gridCont.innerHTML = "";
+    sinResultado.classList.remove("hidden");
     return;
   }
-  btnElegir.disabled = false;
+  sinResultado.classList.add("hidden");
   const fechaFmt = new Date(resultado.fecha + "T00:00:00").toLocaleDateString("es-ES", { weekday: 'long', day: 'numeric', month: 'long' });
-  cont.innerHTML = `${escapeHtml(mcmServicioElegido.nombre)}<br><strong>${fechaFmt}</strong><br>a las <strong>${minAHora(resultado.inicioMin)}</strong>`;
+  fechaCont.textContent = fechaFmt;
+
+  gridCont.innerHTML = resultado.slots.map(t => `<div class="slot-btn" data-min="${t}">${minAHora(t)}</div>`).join("");
+  gridCont.querySelectorAll("[data-min]").forEach(el => {
+    el.addEventListener("click", () => {
+      mcmResultadoActual.inicioMin = parseInt(el.dataset.min, 10);
+      mcmAbrirPasoDatos();
+    });
+  });
 }
 
 document.getElementById("mcmBtnSiguiente").addEventListener("click", () => {
@@ -2402,8 +2445,7 @@ document.getElementById("mcmBtnSiguiente").addEventListener("click", () => {
   mcmMostrarResultado(resultado, mcmResultadoActual.ventana);
 });
 
-document.getElementById("mcmBtnElegir").addEventListener("click", () => {
-  if (!mcmResultadoActual) return;
+function mcmAbrirPasoDatos() {
   mcmMostrarPaso("mcmPasoDatos");
   mcmClienteVinculado = null;
   document.getElementById("mcmTelefono").value = "";
@@ -2411,7 +2453,7 @@ document.getElementById("mcmBtnElegir").addEventListener("click", () => {
   document.getElementById("mcmNotaTelefono").textContent = "";
   document.getElementById("mcmNotaNombre").textContent = "";
   document.getElementById("mcmMsgDatos").textContent = "";
-});
+}
 
 let mcmDebounceTelefono = null;
 document.getElementById("mcmTelefono").addEventListener("input", (e) => {
