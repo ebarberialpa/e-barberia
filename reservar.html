@@ -856,7 +856,10 @@ document.querySelectorAll('input[name="preferencia"]').forEach(radio => {
 
 // Tocar cualquier control del marco (horas o días) selecciona automáticamente "Horario concreto"
 ["prefDesde", "prefHasta"].forEach(id => {
-  document.getElementById(id).addEventListener("focus", () => { document.getElementById("radioPersonalizada").checked = true; });
+  const input = document.getElementById(id);
+  ["focus", "input", "change", "click", "mousedown"].forEach(evento => {
+    input.addEventListener(evento, () => { document.getElementById("radioPersonalizada").checked = true; });
+  });
 });
 document.querySelectorAll(".pref-dia").forEach(chk => {
   chk.addEventListener("change", () => { document.getElementById("radioPersonalizada").checked = true; });
