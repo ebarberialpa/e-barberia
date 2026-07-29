@@ -381,7 +381,7 @@ document.getElementById("btnOlvidoPassword").addEventListener("click", async () 
 
   try {
     await auth.sendPasswordResetEmail(email);
-    mostrarMensaje("Te hemos enviado un correo a " + email + " con un enlace para restablecer tu contraseña.", "success");
+    mostrarMensaje("Te hemos enviado un correo a " + email + " con un enlace para restablecer tu contraseña. Revisa también tu bandeja de No deseados / Spam.", "success");
   } catch (err) {
     mostrarMensaje(traducirError(err.code), "error");
   }
