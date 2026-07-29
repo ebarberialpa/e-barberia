@@ -1033,6 +1033,16 @@
         <input type="text" id="mcmNombre" placeholder="Ej: María García">
         <div class="nota-coincidencia" id="mcmNotaNombre"></div>
       </div>
+
+      <label class="pref-opcion hidden" id="mcmOpcionListaEspera" style="justify-content:flex-start; align-items:flex-start; gap:8px; text-align:left; margin-bottom:14px;">
+        <input type="checkbox" id="mcmChkListaEspera" style="margin-top:2px;">
+        <span style="font-size:12px; color:#94a3b8; line-height:1.5;">
+          <strong style="color:#e2e8f0;">Apuntar en lista de espera.</strong>
+          Si se libera un hueco antes, dentro de la preferencia horaria de esta búsqueda, se avisará para adelantar la cita.
+        </span>
+      </label>
+      <div class="nota-coincidencia" id="mcmNotaListaEsperaNoDisponible" style="margin-bottom:10px;">Solo disponible si el teléfono coincide con un cliente ya registrado en la app.</div>
+
       <button class="primary" id="mcmBtnConfirmar">Añadir cita</button>
       <div class="msg" id="mcmMsgDatos"></div>
     </div>
@@ -1559,6 +1569,11 @@ document.getElementById("formExcepcion").addEventListener("submit", async (e) =>
     return;
   }
 
+  if (existeExcepcionDuplicada(desde, hasta, tipo, editId)) {
+    mostrarMensaje("msgExcepcion", "Ya existe una fecha idéntica marcada con ese mismo tipo", "error");
+    return;
+  }
+
   btn.disabled = true;
   try {
     const dato = { desde, hasta, tipo, motivo: motivo || "" };
@@ -1597,6 +1612,15 @@ function resetFormExcepcion() {
 document.getElementById("btnCancelarEdicionExcepcion").addEventListener("click", resetFormExcepcion);
 
 let excepcionesCache = {};
+
+// Comprueba si ya existe una excepción idéntica (mismas fechas y mismo tipo), para no duplicar
+function existeExcepcionDuplicada(desde, hasta, tipo, excluirId) {
+  return Object.keys(excepcionesCache).some(id => {
+    if (id === excluirId) return false;
+    const ex = excepcionesCache[id];
+    return ex.desde === desde && ex.hasta === hasta && ex.tipo === tipo;
+  });
+}
 
 // =========================================================
 // FESTIVOS NACIONALES Y AUTONÓMICOS (importación desde API pública, sin coste)
@@ -1657,14 +1681,23 @@ document.getElementById("btnAnadirFestivosSeleccionados").addEventListener("clic
 
   btn.disabled = true;
   try {
+    const yaExistian = seleccionados.filter(f => existeExcepcionDuplicada(f.date, f.date, "festivo"));
+    const nuevos = seleccionados.filter(f => !existeExcepcionDuplicada(f.date, f.date, "festivo"));
+
     const updates = {};
-    seleccionados.forEach(f => {
+    nuevos.forEach(f => {
       const id = db.ref("excepciones").push().key;
       updates[id] = { desde: f.date, hasta: f.date, tipo: "festivo", motivo: f.localName, creadoEn: Date.now() };
     });
-    await db.ref("excepciones").update(updates);
+
+    if (nuevos.length > 0) {
+      await db.ref("excepciones").update(updates);
+    }
+
     msg.className = "msg success";
-    msg.textContent = `${seleccionados.length} festivo(s) añadido(s) correctamente.`;
+    msg.textContent = nuevos.length > 0
+      ? `${nuevos.length} festivo(s) añadido(s) correctamente.` + (yaExistian.length > 0 ? ` (${yaExistian.length} ya estaban añadidos y se han omitido)` : "")
+      : "Todos los seleccionados ya estaban añadidos previamente.";
     document.getElementById("listaFestivosNacionales").innerHTML = "";
     btn.classList.add("hidden");
   } catch (err) {
@@ -1694,7 +1727,7 @@ function cargarExcepciones() {
       return;
     }
     const etiquetas = { festivo: "Festivo", vacaciones: "Vacaciones", especial: "Horario especial" };
-    const fmt = (f) => new Date(f + "T00:00:00").toLocaleDateString("es-ES", { day: 'numeric', month: 'short' });
+    const fmt = (f) => new Date(f + "T00:00:00").toLocaleDateString("es-ES", { day: 'numeric', month: 'short', year: 'numeric' });
 
     cont.innerHTML = ids.map(id => {
       const ex = datos[id];
@@ -2507,6 +2540,15 @@ function mcmAbrirPasoDatos() {
   document.getElementById("mcmNotaTelefono").textContent = "";
   document.getElementById("mcmNotaNombre").textContent = "";
   document.getElementById("mcmMsgDatos").textContent = "";
+  document.getElementById("mcmChkListaEspera").checked = false;
+  mcmActualizarVisibilidadListaEspera();
+}
+
+function mcmActualizarVisibilidadListaEspera() {
+  const disponible = !!mcmClienteVinculado;
+  document.getElementById("mcmOpcionListaEspera").classList.toggle("hidden", !disponible);
+  document.getElementById("mcmNotaListaEsperaNoDisponible").classList.toggle("hidden", disponible);
+  if (!disponible) document.getElementById("mcmChkListaEspera").checked = false;
 }
 
 let mcmDebounceTelefono = null;
@@ -2514,6 +2556,7 @@ document.getElementById("mcmTelefono").addEventListener("input", (e) => {
   clearTimeout(mcmDebounceTelefono);
   const valor = limpiarTelefono(e.target.value);
   mcmClienteVinculado = null;
+  mcmActualizarVisibilidadListaEspera();
   document.getElementById("mcmNotaTelefono").className = "nota-coincidencia";
   document.getElementById("mcmNotaTelefono").textContent = "";
   if (valor.length < 9) return;
@@ -2523,7 +2566,8 @@ document.getElementById("mcmTelefono").addEventListener("input", (e) => {
     if (datos) {
       const uid = Object.keys(datos)[0];
       const c = datos[uid];
-      mcmClienteVinculado = { uid, nombre: c.nombre, telefono: c.telefono };
+      mcmClienteVinculado = { uid, nombre: c.nombre, telefono: c.telefono, email: c.email };
+      mcmActualizarVisibilidadListaEspera();
       document.getElementById("mcmNombre").value = c.nombre;
       document.getElementById("mcmNotaTelefono").className = "nota-coincidencia encontrado";
       document.getElementById("mcmNotaTelefono").textContent = "✓ Cliente encontrado: " + c.nombre + " (se vinculará a su cuenta)";
@@ -2545,7 +2589,8 @@ document.getElementById("mcmNombre").addEventListener("input", (e) => {
     if (datos) {
       const uid = Object.keys(datos)[0];
       const c = datos[uid];
-      mcmClienteVinculado = { uid, nombre: c.nombre, telefono: c.telefono };
+      mcmClienteVinculado = { uid, nombre: c.nombre, telefono: c.telefono, email: c.email };
+      mcmActualizarVisibilidadListaEspera();
       document.getElementById("mcmTelefono").value = c.telefono;
       document.getElementById("mcmNotaNombre").className = "nota-coincidencia encontrado";
       document.getElementById("mcmNotaNombre").textContent = "✓ Cliente encontrado: se vinculará a su cuenta (" + c.telefono + ")";
@@ -2584,6 +2629,9 @@ document.getElementById("mcmBtnConfirmar").addEventListener("click", async () =>
   btn.disabled = true;
   try {
     const nuevaId = db.ref("citas").push().key;
+    const quiereListaEspera = mcmClienteVinculado && document.getElementById("mcmChkListaEspera").checked;
+    const listaEsperaId = quiereListaEspera ? db.ref("listaEspera").push().key : null;
+
     const datosCita = {
       clienteId: mcmClienteVinculado ? mcmClienteVinculado.uid : null,
       clienteNombre: nombre,
@@ -2596,7 +2644,7 @@ document.getElementById("mcmBtnConfirmar").addEventListener("click", async () =>
       inicio: inicio,
       fin: fin,
       estado: "confirmada",
-      listaEsperaId: null,
+      listaEsperaId: listaEsperaId,
       esManual: true,
       creadaEn: Date.now()
     };
@@ -2606,6 +2654,28 @@ document.getElementById("mcmBtnConfirmar").addEventListener("click", async () =>
     updates["citasPublicas/" + nuevaId] = { fecha: fechaISO, inicio, fin, estado: "confirmada" };
     if (mcmClienteVinculado) {
       updates["citasPorUsuario/" + mcmClienteVinculado.uid + "/" + nuevaId] = datosCita;
+    }
+    if (quiereListaEspera) {
+      const ventana = mcmResultadoActual.ventana;
+      const datosListaEspera = {
+        clienteId: mcmClienteVinculado.uid,
+        clienteNombre: nombre,
+        clienteTelefono: telefono,
+        clienteEmail: mcmClienteVinculado.email || "",
+        citaId: nuevaId,
+        servicioId: mcmServicioElegido.id,
+        servicioNombre: mcmServicioElegido.nombre,
+        duracion: mcmServicioElegido.duracion,
+        preferenciaInicioMin: ventana.inicio,
+        preferenciaFinMin: ventana.fin,
+        preferenciaDias: ventana.dias,
+        fechaCitaActual: fechaISO,
+        horaCitaActual: inicio,
+        estado: "pendiente",
+        creadaEn: Date.now()
+      };
+      updates["listaEspera/" + listaEsperaId] = datosListaEspera;
+      updates["listaEsperaPorUsuario/" + mcmClienteVinculado.uid + "/" + listaEsperaId] = datosListaEspera;
     }
 
     await db.ref().update(updates);
