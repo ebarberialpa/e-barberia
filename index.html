@@ -3,63 +3,75 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Peluquería - Acceso</title>
+<title>Barbería - Acceso</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1e293b">
+<meta name="theme-color" content="#F1E8DB">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #1e293b;
-    color: #e2e8f0;
+    background: linear-gradient(160deg, #F8F1E5 0%, #EDDFC9 45%, #E1CBA8 100%);
+    background-attachment: fixed;
+    color: #4A3A2A;
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 20px;
   }
+  @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
   .card {
-    background: #273549;
-    border-radius: 16px;
+    background: #FFFDF8;
+    border-radius: 22px;
     padding: 32px 24px;
     width: 100%;
     max-width: 400px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    box-shadow: 0 24px 50px rgba(90,65,40,0.18), 0 2px 8px rgba(90,65,40,0.08);
+    border: 1px solid rgba(216,200,181,0.5);
+    animation: fadeSlideUp 0.5s ease;
   }
   h1 {
-    font-size: 22px;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 26px;
+    font-weight: 700;
     text-align: center;
     margin-bottom: 4px;
-    color: #f1f5f9;
+    color: #3A2A1A;
+    letter-spacing: 0.01em;
   }
   .subtitle {
     text-align: center;
     font-size: 13px;
-    color: #94a3b8;
+    color: #9C8468;
     margin-bottom: 24px;
   }
   .tabs {
     display: flex;
-    background: #1e293b;
-    border-radius: 10px;
+    background: #F1E8DB;
+    border-radius: 12px;
     padding: 4px;
     margin-bottom: 24px;
+    border: 1px solid rgba(216,200,181,0.6);
   }
   .tab {
     flex: 1;
     text-align: center;
     padding: 10px;
-    border-radius: 8px;
+    border-radius: 9px;
     cursor: pointer;
     font-size: 14px;
-    color: #94a3b8;
-    transition: all 0.2s;
+    color: #9C8468;
+    transition: all 0.25s ease;
     user-select: none;
   }
   .tab.active {
-    background: #3b82f6;
+    background: linear-gradient(180deg, #C89A5A, #A8783D);
     color: #fff;
     font-weight: 600;
+    box-shadow: 0 3px 10px rgba(157,111,57,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
   }
   .field {
     margin-bottom: 14px;
@@ -67,64 +79,69 @@
   label {
     display: block;
     font-size: 13px;
-    color: #94a3b8;
+    color: #9C8468;
     margin-bottom: 6px;
   }
   input {
     width: 100%;
     padding: 12px 14px;
     border-radius: 10px;
-    border: 1px solid #334155;
-    background: #1e293b;
-    color: #f1f5f9;
+    border: 1px solid #D8C8B5;
+    background: #FCFAF7;
+    color: #3A2A1A;
     font-size: 15px;
     outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
   input:focus {
-    border-color: #3b82f6;
+    border-color: #B6864A;
+    box-shadow: 0 0 0 4px rgba(182,134,74,0.15);
   }
   button.submit {
     width: 100%;
     padding: 13px;
     border: none;
     border-radius: 10px;
-    background: #3b82f6;
+    background: linear-gradient(180deg, #C89A5A, #A8783D);
     color: #fff;
     font-size: 15px;
     font-weight: 600;
     cursor: pointer;
     margin-top: 10px;
-    transition: background 0.2s;
+    box-shadow: 0 4px 12px rgba(157,111,57,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
   }
-  button.submit:hover { background: #2563eb; }
-  button.submit:disabled { background: #475569; cursor: not-allowed; }
+  button.submit:hover { background: linear-gradient(180deg, #D0A365, #B27E43); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(157,111,57,0.38), inset 0 1px 0 rgba(255,255,255,0.25); }
+  button.submit:active { transform: translateY(0); }
+  button.submit:disabled { background: #C4AC8C; cursor: not-allowed; transform: none; box-shadow: none; }
 
   .btn-logout-inline {
     width: 100%;
     padding: 10px;
     border: none;
     background: transparent;
-    color: #64748b;
+    color: #8A7662;
     font-size: 12px;
     cursor: pointer;
     margin-top: 8px;
   }
-  .btn-logout-inline:hover { color: #94a3b8; text-decoration: underline; }
+  .btn-logout-inline:hover { color: #9C8468; text-decoration: underline; }
 
   .olvido-password {
     text-align: center;
     font-size: 12px;
-    color: #64748b;
+    color: #8A7662;
     cursor: pointer;
     margin-top: 14px;
   }
-  .olvido-password:hover { color: #94a3b8; text-decoration: underline; }
+  .olvido-password:hover { color: #9C8468; text-decoration: underline; }
 
   /* ---- Modal personalizado (sustituye al prompt nativo) ---- */
+  @keyframes modalPop { from { opacity: 0; transform: scale(0.95) translateY(6px); } to { opacity: 1; transform: scale(1) translateY(0); } }
   .modal-overlay-custom {
     position: fixed;
     inset: 0;
-    background: rgba(15,23,42,0.75);
+    background: rgba(74,58,42,0.75);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -132,30 +149,34 @@
     padding: 20px;
   }
   .modal-caja-custom {
-    background: #273549;
-    border-radius: 16px;
-    padding: 22px;
+    background: #FFFDF8;
+    border-radius: 20px;
+    padding: 24px;
     width: 100%;
     max-width: 360px;
+    box-shadow: 0 24px 50px rgba(90,65,40,0.28);
+    border: 1px solid rgba(216,200,181,0.5);
+    animation: modalPop 0.25s ease;
   }
   .modal-mensaje-custom {
     font-size: 14px;
-    color: #f1f5f9;
+    color: #3A2A1A;
     line-height: 1.5;
     margin-bottom: 14px;
   }
   .modal-input-custom {
     width: 100%;
     padding: 11px 12px;
-    border-radius: 9px;
-    border: 1px solid #334155;
-    background: #1e293b;
-    color: #f1f5f9;
+    border-radius: 10px;
+    border: 1px solid #D8C8B5;
+    background: #FCFAF7;
+    color: #3A2A1A;
     font-size: 14px;
     outline: none;
     margin-bottom: 16px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
-  .modal-input-custom:focus { border-color: #3b82f6; }
+  .modal-input-custom:focus { border-color: #B6864A; box-shadow: 0 0 0 4px rgba(182,134,74,0.15); }
   .modal-botones-custom { display: flex; gap: 8px; }
   .modal-botones-custom button { margin-top: 0; flex: 1; }
 
@@ -163,10 +184,10 @@
     text-align: center;
     margin-top: 18px;
     font-size: 12px;
-    color: #64748b;
+    color: #8A7662;
     cursor: pointer;
   }
-  .admin-link:hover { color: #94a3b8; }
+  .admin-link:hover { color: #9C8468; }
 
   .msg {
     font-size: 13px;
@@ -174,8 +195,8 @@
     margin-top: 14px;
     min-height: 18px;
   }
-  .msg.error { color: #f87171; }
-  .msg.success { color: #4ade80; }
+  .msg.error { color: #C4634B; }
+  .msg.success { color: #7CB88C; }
 
   .hidden { display: none !important; }
 
@@ -195,13 +216,13 @@
 <body>
 
 <div class="card">
-  <h1 id="titulo">💈 Peluquería</h1>
+  <h1 id="titulo">✂ Barbería</h1>
   <div class="subtitle" id="subtitulo">Reserva tu cita en segundos</div>
 
   <!-- Aviso de sesión ya iniciada -->
-  <div class="card" id="avisoSesion" style="background:#1e293b; border:1px solid #334155; padding:16px; margin-bottom:18px; display:none;">
-    <div style="font-size:13px; color:#94a3b8; margin-bottom:12px;">
-      Ya tienes una sesión iniciada como <strong id="avisoSesionEmail" style="color:#f1f5f9;"></strong>
+  <div class="card" id="avisoSesion" style="background:#F1E8DB; border:1px solid #D8C8B5; padding:16px; margin-bottom:18px; display:none;">
+    <div style="font-size:13px; color:#9C8468; margin-bottom:12px;">
+      Ya tienes una sesión iniciada como <strong id="avisoSesionEmail" style="color:#3A2A1A;"></strong>
     </div>
     <button type="button" class="submit" id="btnContinuarSesion" style="margin-top:0;">Continuar</button>
     <button type="button" class="btn-logout-inline" id="btnCerrarSesionAviso">Cerrar sesión y usar otra cuenta</button>
@@ -336,7 +357,7 @@ adminLink.addEventListener("click", () => {
     document.getElementById("subtitulo").textContent = "Panel de administración";
     adminLink.textContent = "← Volver a acceso cliente";
   } else {
-    document.getElementById("titulo").textContent = "💈 Peluquería";
+    document.getElementById("titulo").textContent = "✂ Barbería";
     document.getElementById("subtitulo").textContent = "Reserva tu cita en segundos";
     adminLink.textContent = "Acceso profesional →";
   }
@@ -353,7 +374,7 @@ function mostrarPrompt(mensaje, valorInicial) {
         <div class="modal-mensaje-custom">${mensaje}</div>
         <input type="email" id="mpInput" class="modal-input-custom" placeholder="tu@email.com" value="${valorInicial || ''}">
         <div class="modal-botones-custom">
-          <button class="submit" id="mpCancelar" style="background:transparent; border:1px solid #475569; color:#94a3b8;">Cancelar</button>
+          <button class="submit" id="mpCancelar" style="background:transparent; border:1px solid #C4AC8C; color:#9C8468;">Cancelar</button>
           <button class="submit" id="mpOk">Enviar</button>
         </div>
       </div>`;
